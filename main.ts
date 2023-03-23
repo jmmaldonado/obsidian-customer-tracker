@@ -2,31 +2,53 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Set
 
 // Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
+interface CustomerTrackerSettings {
 	mySetting: string;
+    pruebamld: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+const DEFAULT_SETTINGS: CustomerTrackerSettings = {
+	mySetting: 'default',
+    pruebamld: 'dasdas'
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class CustomerTracker extends Plugin {
+	settings: CustomerTrackerSettings;
+
+	async readAllFiles(): Promise<void> {
+		const { vault } = this.app;
+
+		const fileContents: string[] = await Promise.all(
+		  vault.getMarkdownFiles().map((file) => vault.cachedRead(file))
+		);
+	
+		let totalLength = 0;
+		fileContents.forEach((content) => {
+		  totalLength += content.length;
+		  console.log(content);
+		});
+		
+	}
 
 	async onload() {
 		await this.loadSettings();
 
+
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
+			await this.readAllFiles();
 			new Notice('This is a notice!');
+			
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
 
+		/*
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		const statusBarItemEl = this.addStatusBarItem();
 		statusBarItemEl.setText('Status Bar Text');
+		*/
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
@@ -108,9 +130,9 @@ class SampleModal extends Modal {
 }
 
 class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: CustomerTracker;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: CustomerTracker) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -133,5 +155,17 @@ class SampleSettingTab extends PluginSettingTab {
 					this.plugin.settings.mySetting = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+            .setName('Prueba mld')
+            .setDesc('blah')
+			.addText(text => text
+				.setPlaceholder('placeholder mld')
+				.setValue(this.plugin.settings.pruebamld)
+				.onChange(async (value) => {
+					console.log('Secret: ' + value);
+					this.plugin.settings.pruebamld = value;
+					await this.plugin.saveSettings();
+				})); 
 	}
 }
