@@ -64,6 +64,38 @@ export class Customers {
         html += "</table>"
         return html;
     }
+
+    public renderMD(): string {
+        if (this.customers.size == 0)
+            return "No customer updates";
+
+        let md = "";
+        md += "| Customer | Area | Initiative | Updates | Days Ago | First seen | People |\n"
+        md += "|----------|------|------------|---------|----------|------------|--------|\n"
+        for (let [, customer] of this.customers) {
+            for (let [, area] of customer.areas) {
+                for (let [, initiative] of area.initiatives) {
+                    let people: string[] = [];
+                    for (let update of initiative.updates) {
+                        if(!people.includes(update.person))
+                            people.push(update.person);
+                    }
+                    md += "| {0} |".format(initiative.customer);
+                    md += "  {0} |".format(initiative.area);
+                    md += "  {0} |".format(initiative.name);
+                    md += "  {0} |".format(initiative.numUpdates.toString());
+                    md += "  {0} |".format(Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)).toString());
+                    md += "  {0} |".format(initiative.firstUpdate.toDateString());
+
+                    for (let person of people) {
+                            md += " " + person + "</br> "
+                        }
+                    md += " |\n"
+                }
+            }
+        }
+        return md;
+    }
 }
 
 export class Customer {
