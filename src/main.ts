@@ -1,31 +1,78 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { Customers, Customer } from 'src/Customers'
+import { CustomerInitiatives, CustomerInitiative } from 'src/CustomerInitiatives'
 
 // Remember to rename these classes and interfaces!
 
 interface CustomerTrackerSettings {
-	mySetting: string;
-    pruebamld: string;
+	customersBaseFolder: string;
+
+	//TODO: Future implementation to separate customer areas in different files
+	customerAreasInMainFile: boolean;
 }
 
 const DEFAULT_SETTINGS: CustomerTrackerSettings = {
-	mySetting: 'default',
-    pruebamld: 'dasdas'
+	customersBaseFolder: 'Spaces/Customers/',
+	customerAreasInMainFile: true
 }
 
 export default class CustomerTracker extends Plugin {
 	settings: CustomerTrackerSettings;
+	customers: Customers;
 
 	async readAllFiles(): Promise<void> {
 		const { vault } = this.app;
 
 		const fileContents: string[] = await Promise.all(
-		  vault.getMarkdownFiles().map((file) => vault.cachedRead(file))
+		  	vault.getMarkdownFiles().map((file) => vault.cachedRead(file))
 		);
+
+		//TODO: Sacarlo a settings
+		let areaRegex = new RegExp('^#{1}\\s(.*)');
+		let initiativeRegex = new RegExp('^#{2}\\s(.*)');
+		let updateRegex = new RegExp('^#{4}\\s(.*)');
+
+		let customerFiles = [];
+		const files = this.app.vault.getMarkdownFiles()
+		files.forEach(async (file) => {
+
+			if (file.path.contains(this.settings.customersBaseFolder)) {
+				let customer: Customer = new Customer(file.basename, file.path);
+
+				let fileContent = await vault.cachedRead(file);
+				let lines = await fileContent.split("\n").filter(line => line.includes("#"))
+				let customerInitiative: CustomerInitiative | undefined = undefined;
+
+				lines.forEach((line) => {
+
+					//If we have no initiative and the line
+					if (customerInitiative === undefined && areaRegex.test(line))
+						return;
+					
+					//Check if the line is a new customer area
+					if (areaRegex.test(line)) console.log("H1: " + line);
+					if (initiativeRegex.test(line)) console.log("H2: " + line);
+					if (updateRegex.test(line)) console.log("H4: " + line);
+					//console.log(content);
+
+				});		  	
+
+				this.customers.addCustomer(customer);
+			}			
+		})
+
 	
 		let totalLength = 0;
-		fileContents.forEach((content) => {
-		  totalLength += content.length;
-		  console.log(content);
+		
+		fileContents.forEach(async (content) => {
+			let lines = await content.split("\n").filter(line => line.includes("#"))
+			lines.forEach((line) => {
+				totalLength += content.length;
+				if (areaRegex.test(line)) console.log("H1: " + line);
+				if (initiativeRegex.test(line)) console.log("H2: " + line);
+				if (updateRegex.test(line)) console.log("H4: " + line);
+				  //console.log(content);
+			});		  	
 		});
 		
 	}
@@ -142,30 +189,17 @@ class SampleSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+		containerEl.createEl('h2', {text: 'Settings for Customer Tracker plugin.'});
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('Customer base folder')
+			.setDesc('Base folder for customers files')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('Spaces/Customers/')
+				.setValue(this.plugin.settings.customersBaseFolder)
 				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.customersBaseFolder = value;
 					await this.plugin.saveSettings();
 				}));
-
-		new Setting(containerEl)
-            .setName('Prueba mld')
-            .setDesc('blah')
-			.addText(text => text
-				.setPlaceholder('placeholder mld')
-				.setValue(this.plugin.settings.pruebamld)
-				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.pruebamld = value;
-					await this.plugin.saveSettings();
-				})); 
 	}
 }
