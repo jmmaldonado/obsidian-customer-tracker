@@ -1,4 +1,5 @@
 import { CustomerInitiatives, CustomerInitiative } from "src/CustomerInitiatives"
+import { CustomerUpdate } from "./CustomerUpdates";
 
 export class Customers {
     customers: Map<string, Customer>;
@@ -80,9 +81,9 @@ export class Customers {
                         if(!people.includes(update.person))
                             people.push(update.person);
                     }
-                    md += "| {0} |".format(initiative.customer);
-                    md += "  {0} |".format(initiative.area);
-                    md += "  {0} |".format(initiative.name);
+                    md += "| {0} |".format(initiative.getCustomerLink(initiative.customer));
+                    md += "  {0} |".format(initiative.getAreaLink(initiative.area));
+                    md += "  {0} |".format(initiative.getInitiativeLink(initiative.name));
                     md += "  {0} |".format(initiative.numUpdates.toString());
                     md += "  {0} |".format(Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)).toString());
                     md += "  {0} |".format(initiative.firstUpdate.toDateString());
@@ -90,6 +91,7 @@ export class Customers {
                     for (let person of people) {
                             md += " " + person + "</br> "
                         }
+                    md += initiative.updates[0].getLink("Last update");
                     md += " |\n"
                 }
             }

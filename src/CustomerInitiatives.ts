@@ -67,7 +67,7 @@ export class CustomerInitiative {
         update.initiative = this.name;
         update.date = date;
         update.person = person;
-        update.link
+        update.raw = updateLine;
 
         this.numUpdates++;
         this.firstUpdate = (date < this.firstUpdate) ? date : this.firstUpdate;
@@ -91,4 +91,37 @@ export class CustomerInitiative {
             return "";
 		return result[0];
 	}
+
+    public getInitiativeLink(text?: string): string {
+        let clean = this.name;
+        clean = clean.replace("##","");
+        clean = clean.replace("[[", "");
+        clean = clean.replace("]]", "");
+        if (text == null)
+            return "[[{0}#{1}]]".format(this.customer, clean);
+        else
+            return "[[{0}#{1}\\|{2}]]".format(this.customer, clean, text);
+    }
+
+    public getAreaLink(text?: string): string {
+        let clean = this.area;
+        clean = clean.replace("#","");
+        clean = clean.replace("[[", "");
+        clean = clean.replace("]]", "");
+        if (text == null)
+            return "[[{0}#{1}]]".format(this.customer, clean);
+        else
+            return "[[{0}#{1}\\|{2}]]".format(this.customer, clean, text);
+    }
+
+    public getCustomerLink(text?: string): string {
+        let clean = this.customer;
+        clean = clean.replace("#","");
+        clean = clean.replace("[[", "");
+        clean = clean.replace("]]", "");
+        if (text == null)
+            return "[[{0}]]".format(clean);
+        else
+            return "[[{0}\\|{1}]]".format(clean, text);
+    }
 }
