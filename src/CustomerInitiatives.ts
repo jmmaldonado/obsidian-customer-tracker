@@ -41,7 +41,7 @@ export class CustomerInitiative {
         let date = this.#extractDate(updateLine);
         let person = this.#extractPerson(updateLine);
         let update = new CustomerUpdate();
-        
+
         update.area = this.area;
         update.customer = this.customer;
         update.initiative = this.name;
@@ -55,11 +55,19 @@ export class CustomerInitiative {
         //TODO: Update dates
     }
 
-    #extractDate(line: string): Date {
-		return new Date();
+    #extractDate(line: string): Date | null {
+        let dateRegEx = new RegExp("(\\d{4}-\\d{2}-\\d{1,2})");
+        let result = line.match(dateRegEx);
+        if (result == null)
+            return null;
+		return new Date(result[0]);
 	}
 
 	#extractPerson(line: string): string {
-		return "";
+        let personRegEx = new RegExp("(\\[{2}.*\\]{2})");
+        let result = line.match(personRegEx);
+        if (result == null)
+            return "";
+		return result[0];
 	}
 }
