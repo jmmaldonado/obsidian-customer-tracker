@@ -15,6 +15,17 @@ export class CustomerInitiatives {
         return this.#initiatives.has(name);
     }
 
+    public addInitiative(name: string) {
+        if (!this.containsInitiative(name)) {
+            let initiative: CustomerInitiative = new CustomerInitiative(name, this.area, this.customer);
+            this.#initiatives.set(name, initiative);
+        }
+    }
+
+    public getInitiative(name: string): CustomerInitiative | undefined {
+        return this.#initiatives.get(name);
+    }
+
 }
 
 export class CustomerInitiative {
@@ -42,17 +53,23 @@ export class CustomerInitiative {
         let person = this.#extractPerson(updateLine);
         let update = new CustomerUpdate();
 
+        if (date == null || person == "") {
+            console.log("ERROR: Could not add update for the initiative. Date or person not detected. Line: " + updateLine);
+            return;
+        }
+
         update.area = this.area;
         update.customer = this.customer;
         update.initiative = this.name;
         update.date = date;
         update.person = person;
         update.link
-        this.updates.push(update);
 
         this.numUpdates++;
+        this.firstUpdate = (date < this.firstUpdate) ? date : this.firstUpdate;
+        this.lastUpdate = (date > this.lastUpdate) ? date : this.lastUpdate;
 
-        //TODO: Update dates
+        this.updates.push(update);
     }
 
     #extractDate(line: string): Date | null {
