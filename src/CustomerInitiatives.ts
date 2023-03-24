@@ -1,29 +1,33 @@
 import { CustomerUpdate } from "src/CustomerUpdates"
 
 export class CustomerInitiatives {
-    #initiatives: Map<string, CustomerInitiative>;
+    initiatives: Map<string, CustomerInitiative>;
     area: string;
     customer: string;
 
     public constructor(area: string, customer: string) {
         this.area = area;
         this.customer = customer;
-        this.#initiatives = new Map<string, CustomerInitiative>();
+        this.initiatives = new Map<string, CustomerInitiative>();
     }
 
     public containsInitiative(name: string): boolean {
-        return this.#initiatives.has(name);
+        return this.initiatives.has(name);
     }
 
     public addInitiative(name: string) {
         if (!this.containsInitiative(name)) {
             let initiative: CustomerInitiative = new CustomerInitiative(name, this.area, this.customer);
-            this.#initiatives.set(name, initiative);
+            this.initiatives.set(name, initiative);
         }
     }
 
+    public setInitiative(name: string, initiative: CustomerInitiative) {
+        this.initiatives.set(name, initiative);
+    }
+
     public getInitiative(name: string): CustomerInitiative | undefined {
-        return this.#initiatives.get(name);
+        return this.initiatives.get(name);
     }
 
 }
@@ -49,8 +53,8 @@ export class CustomerInitiative {
 
     public addUpdate(updateLine: string) {
 
-        let date = this.#extractDate(updateLine);
-        let person = this.#extractPerson(updateLine);
+        let date = this.extractDate(updateLine);
+        let person = this.extractPerson(updateLine);
         let update = new CustomerUpdate();
 
         if (date == null || person == "") {
@@ -72,7 +76,7 @@ export class CustomerInitiative {
         this.updates.push(update);
     }
 
-    #extractDate(line: string): Date | null {
+    private extractDate(line: string): Date | null {
         let dateRegEx = new RegExp("(\\d{4}-\\d{2}-\\d{1,2})");
         let result = line.match(dateRegEx);
         if (result == null)
@@ -80,7 +84,7 @@ export class CustomerInitiative {
 		return new Date(result[0]);
 	}
 
-	#extractPerson(line: string): string {
+	private extractPerson(line: string): string {
         let personRegEx = new RegExp("(\\[{2}.*\\]{2})");
         let result = line.match(personRegEx);
         if (result == null)
