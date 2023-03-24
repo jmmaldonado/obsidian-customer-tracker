@@ -3,7 +3,8 @@ import CustomerTracker from './main';
 
 
 export interface CustomerTrackerSettings {
-	customersBaseFolder: string;
+	customerTrackingNote: string;
+    customersBaseFolder: string;
 	areaRegex: string;
 	initiativeRegex: string;
 	updateRegex: string;
@@ -13,6 +14,7 @@ export interface CustomerTrackerSettings {
 }
 
 export const DEFAULT_SETTINGS: CustomerTrackerSettings = {
+    customerTrackingNote: 'Customer Tracking',
 	customersBaseFolder: 'Spaces/Customers/',
 	areaRegex: '^#{1}\\s(.*)',
 	initiativeRegex: '^#{2}\\s(.*)',
@@ -34,6 +36,17 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 		containerEl.empty();
 
 		containerEl.createEl('h2', { text: 'Settings for Customer Tracker plugin.' });
+
+        new Setting(containerEl)
+			.setName('Customer tracking note')
+			.setDesc('Note name to render customer tracking information')
+			.addText(text => text
+				.setPlaceholder('Customer Tracking')
+				.setValue(this.plugin.settings.customerTrackingNote)
+				.onChange(async (value) => {
+					this.plugin.settings.customerTrackingNote = value;
+					await this.plugin.saveSettings();
+				}));
 
 		new Setting(containerEl)
 			.setName('Customer base folder')
