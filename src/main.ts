@@ -99,10 +99,13 @@ export default class CustomerTracker extends Plugin {
 
 
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', async (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('dice', 'Customer tracker', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			await this.generateCustomers();
-			new Notice('This is a notice!');
+			if (this.customers) {
+				new SampleModal(this.app, this.customers).open();
+			}
+			//new Notice('This is a notice!');
 
 		});
 		// Perform additional things with the ribbon
@@ -119,7 +122,7 @@ export default class CustomerTracker extends Plugin {
 			id: 'open-sample-modal-simple',
 			name: 'Open sample modal (simple)',
 			callback: () => {
-				new SampleModal(this.app).open();
+				//new SampleModal(this.app).open();
 			}
 		});
 		// This adds an editor command that can perform some operation on the current editor instance
@@ -142,7 +145,7 @@ export default class CustomerTracker extends Plugin {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
-						new SampleModal(this.app).open();
+						//new SampleModal(this.app).open();
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
@@ -178,13 +181,16 @@ export default class CustomerTracker extends Plugin {
 }
 
 class SampleModal extends Modal {
-	constructor(app: App) {
+	customers: Customers;
+	constructor(app: App, customers: Customers) {
 		super(app);
+		this.customers = customers;
 	}
 
 	onOpen() {
 		const { contentEl } = this;
-		contentEl.setText('Woah!');
+		//contentEl.setText('Woah!');
+		contentEl.createDiv().innerHTML = this.customers.renderHTML();
 	}
 
 	onClose() {
