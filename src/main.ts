@@ -20,11 +20,12 @@ export default class CustomerTracker extends Plugin {
 	settings: CustomerTrackerSettings;
 	customers: Customers;
 
-	async readAllFiles(): Promise<void> {
+	async generateCustomers(): Promise<boolean> {
 		const { vault } = this.app;
+		let result = false;
 
 		const fileContents: string[] = await Promise.all(
-		  	vault.getMarkdownFiles().map((file) => vault.cachedRead(file))
+			vault.getMarkdownFiles().map((file) => vault.cachedRead(file))
 		);
 
 		//TODO: Sacarlo a settings
@@ -32,49 +33,65 @@ export default class CustomerTracker extends Plugin {
 		let initiativeRegex = new RegExp('^#{2}\\s(.*)');
 		let updateRegex = new RegExp('^#{4}\\s(.*)');
 
-		let customerFiles = [];
+		this.customers = new Customers();
 		const files = this.app.vault.getMarkdownFiles()
-		files.forEach(async (file) => {
+		for (const file of files) {
 
 			if (file.path.contains(this.settings.customersBaseFolder)) {
 				let customer: Customer = new Customer(file.basename, file.path);
 
 				let fileContent = await vault.cachedRead(file);
-				let lines = await fileContent.split("\n").filter(line => line.includes("#"))
-				let customerInitiative: CustomerInitiative | undefined = undefined;
+				let lines = fileContent.split("\n").filter(line => line.includes("#"))
 
-				lines.forEach((line) => {
+				let customerArea = "";
+				let customerInitiative: CustomerInitiative | undefined;
 
-					//If we have no initiative and the line
-					if (customerInitiative === undefined && areaRegex.test(line))
-						return;
-					
-					//Check if the line is a new customer area
-					if (areaRegex.test(line)) console.log("H1: " + line);
-					if (initiativeRegex.test(line)) console.log("H2: " + line);
-					if (updateRegex.test(line)) console.log("H4: " + line);
-					//console.log(content);
 
-				});		  	
+
+				for (const line of lines) {
+
+					if (updateRegex.test(line)) {
+						if (!(customerInitiative == null)) {
+							customerInitiative.addUpdate(line);
+						}
+					} else if (initiativeRegex.test(line)) {
+						if (!(customerArea === "")) {
+							if (!(customerInitiative == null)) {
+								//Add the previous initiative, create a new one and add it to the customer object
+								customer.addInitiativeToArea(customerArea, customerInitiative);
+								customerInitiative = new CustomerInitiative(line, customerArea, customer.name);
+								//customer.addInitiativeToArea(customerArea, customerInitiative);
+							} else {
+								customerInitiative = new CustomerInitiative(line, customerArea, customer.name);
+								//customer.addInitiativeToArea(customerArea, customerInitiative);
+							}
+						}
+
+					} else if (areaRegex.test(line)) {
+						if (!(customerArea === "")) {
+							//We update the last area with the initiatives we had captured and re-initialize the initiatives
+							if (!(customerInitiative == null)) {
+								customer.addInitiativeToArea(customerArea, customerInitiative);
+								customerInitiative = undefined;
+							}
+						}
+						//We add the new area with an empty set of initiatives
+						customerArea = line;
+						customer.addInitiativeToArea(customerArea, customerInitiative);
+						
+					}
+				}
+
+				//If we finished going through the file, add the last initiatives we found in case there are any
+				if (!(customerArea === "") && !(customerInitiative == null))
+					customer.addInitiativeToArea(customerArea, customerInitiative);
 
 				this.customers.addCustomer(customer);
-			}			
-		})
+			}
+		}
 
-	
-		let totalLength = 0;
-		
-		fileContents.forEach(async (content) => {
-			let lines = await content.split("\n").filter(line => line.includes("#"))
-			lines.forEach((line) => {
-				totalLength += content.length;
-				if (areaRegex.test(line)) console.log("H1: " + line);
-				if (initiativeRegex.test(line)) console.log("H2: " + line);
-				if (updateRegex.test(line)) console.log("H4: " + line);
-				  //console.log(content);
-			});		  	
-		});
-		
+		result = true;
+		return result;
 	}
 
 	async onload() {
@@ -84,9 +101,9 @@ export default class CustomerTracker extends Plugin {
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			await this.readAllFiles();
+			await this.generateCustomers();
 			new Notice('This is a notice!');
-			
+
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -166,12 +183,12 @@ class SampleModal extends Modal {
 	}
 
 	onOpen() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.setText('Woah!');
 	}
 
 	onClose() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.empty();
 	}
 }
@@ -185,11 +202,11 @@ class SampleSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for Customer Tracker plugin.'});
+		containerEl.createEl('h2', { text: 'Settings for Customer Tracker plugin.' });
 
 		new Setting(containerEl)
 			.setName('Customer base folder')
