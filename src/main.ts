@@ -1,26 +1,11 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS } from './Settings';
 import { Customers, Customer } from 'src/Customers'
 import { CustomerInitiatives, CustomerInitiative } from 'src/CustomerInitiatives'
 
 // Remember to rename these classes and interfaces!
 
-interface CustomerTrackerSettings {
-	customersBaseFolder: string;
-	areaRegex: string;
-	initiativeRegex: string;
-	updateRegex: string;
 
-	//TODO: Future implementation to separate customer areas in different files
-	customerAreasInMainFile: boolean;
-}
-
-const DEFAULT_SETTINGS: CustomerTrackerSettings = {
-	customersBaseFolder: 'Spaces/Customers/',
-	areaRegex: '^#{1}\\s(.*)',
-	initiativeRegex: '^#{2}\\s(.*)',
-	updateRegex: '^#{4}\\s(.*)', 
-	customerAreasInMainFile: true
-}
 
 export default class CustomerTracker extends Plugin {
 	settings: CustomerTrackerSettings;
@@ -34,10 +19,6 @@ export default class CustomerTracker extends Plugin {
 			vault.getMarkdownFiles().map((file) => vault.cachedRead(file))
 		);
 
-		//TODO: Sacarlo a settings
-		/*let areaRegex = new RegExp('^#{1}\\s(.*)');
-		let initiativeRegex = new RegExp('^#{2}\\s(.*)');
-		let updateRegex = new RegExp('^#{4}\\s(.*)');*/
 		let areaRegex = new RegExp(this.settings.areaRegex);
 		let initiativeRegex = new RegExp(this.settings.initiativeRegex);
 		let updateRegex = new RegExp(this.settings.updateRegex);
@@ -164,7 +145,7 @@ export default class CustomerTracker extends Plugin {
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new CustomerTrackerSettingsTab(this.app, this));
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
@@ -208,63 +189,4 @@ class SampleModal extends Modal {
 	}
 }
 
-class SampleSettingTab extends PluginSettingTab {
-	plugin: CustomerTracker;
 
-	constructor(app: App, plugin: CustomerTracker) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const { containerEl } = this;
-
-		containerEl.empty();
-
-		containerEl.createEl('h2', { text: 'Settings for Customer Tracker plugin.' });
-
-		new Setting(containerEl)
-			.setName('Customer base folder')
-			.setDesc('Base folder for customers files')
-			.addText(text => text
-				.setPlaceholder('Spaces/Customers/')
-				.setValue(this.plugin.settings.customersBaseFolder)
-				.onChange(async (value) => {
-					this.plugin.settings.customersBaseFolder = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-		.setName('Area regex')
-		.setDesc('Regex to detect customer areas in a customer note')
-		.addText(text => text
-			.setPlaceholder('^#{1}\\s(.*)')
-			.setValue(this.plugin.settings.areaRegex)
-			.onChange(async (value) => {
-				this.plugin.settings.areaRegex = value;
-				await this.plugin.saveSettings();
-			}));
-
-		new Setting(containerEl)
-			.setName('Initiative regex')
-			.setDesc('Regex to detect customer initiatives in a customer note')
-			.addText(text => text
-				.setPlaceholder('^#{2}\\s(.*)')
-				.setValue(this.plugin.settings.initiativeRegex)
-				.onChange(async (value) => {
-					this.plugin.settings.initiativeRegex = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Update regex')
-			.setDesc('Regex to detect updates in a customer note')
-			.addText(text => text
-				.setPlaceholder('^#{4}\\s(.*)')
-				.setValue(this.plugin.settings.updateRegex)
-				.onChange(async (value) => {
-					this.plugin.settings.updateRegex = value;
-					await this.plugin.saveSettings();
-				}));
-	}
-}
