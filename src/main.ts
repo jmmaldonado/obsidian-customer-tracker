@@ -2,6 +2,7 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Set
 import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS } from './Settings';
 import { Customers, Customer } from 'src/Customers'
 import { CustomerInitiatives, CustomerInitiative } from 'src/CustomerInitiatives'
+import { FilterModal } from './FilterModal';
 
 
 export default class CustomerTracker extends Plugin {
@@ -86,7 +87,7 @@ export default class CustomerTracker extends Plugin {
 			// Called when the user clicks the icon.
 			await this.generateCustomers();
 			if (this.customers) {
-				new SampleModal(this.app, this.customers).open();
+				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.customers).open();
 			}
 			//new Notice('This is a notice!');
 
