@@ -98,6 +98,56 @@ export class Customers {
         }
         return md;
     }
+
+    public renderFilteredMD(filter: string): string {
+        if (this.customers.size == 0)
+            return "No customer updates";
+        
+        let md = "";
+        md += "| Customer | Area | Initiative | Updates | Days Ago | First seen | People |\n"
+        md += "|----------|------|------------|---------|----------|------------|--------|\n"
+
+        for (let [, customer] of this.customers) {
+            for (let [, area] of customer.areas) {
+                for (let [, initiative] of area.initiatives) {
+                    let people: string[] = [];
+                    let peopleString: string = "";
+                    for (let update of initiative.updates) {
+                        if(!people.includes(update.person))
+                            people.push(update.person);
+                            peopleString += " " + update.person;
+                    }
+
+                    if (initiative.customer.contains(filter) ||
+                        initiative.area.contains(filter) ||
+                        initiative.name.contains(filter) ||
+                        peopleString.contains(filter) ||
+                        filter === "") {
+
+                        md += "| {0} |".format(initiative.getCustomerLink(initiative.customer));
+                        md += "  {0} |".format(initiative.getAreaLink(initiative.area));
+                        md += "  {0} |".format(initiative.getInitiativeLink(initiative.name));
+                        md += "  {0} |".format(initiative.numUpdates.toString());
+                        md += "  {0} |".format(Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)).toString());
+                        md += "  {0} |".format(initiative.firstUpdate.toDateString());
+
+                        for (let person of people) {
+                                md += " " + person + "</br> "
+                            }
+                        md += initiative.updates[0].getLink("Last update");
+                        md += " |\n"
+
+                        }
+
+                }
+
+            }
+
+        }
+
+        return md;
+
+    }
 }
 
 export class Customer {
