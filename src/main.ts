@@ -3,79 +3,92 @@ import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS }
 import { Customers, Customer } from 'src/Customers'
 import { CustomerInitiatives, CustomerInitiative } from 'src/CustomerInitiatives'
 import { FilterModal } from './FilterModal';
+import { CustomerUpdate } from './CustomerUpdates';
 
 
 export default class CustomerTracker extends Plugin {
 	settings: CustomerTrackerSettings;
 	customers: Customers;
 
-	async generateCustomers(): Promise<boolean> {
+
+	async generateUpdatesFromPeople(): Promise<void> {
 		const { vault } = this.app;
-		let result = false;
-
-		const fileContents: string[] = await Promise.all(
-			vault.getMarkdownFiles().map((file) => vault.cachedRead(file))
-		);
-
-		let areaRegex = new RegExp(this.settings.areaRegex);
-		let initiativeRegex = new RegExp(this.settings.initiativeRegex);
-		let updateRegex = new RegExp(this.settings.updateRegex);
-
-		this.customers = new Customers();
+		let updateRegex = new RegExp(this.settings.peopleUpdateRegex);
 		const files = this.app.vault.getMarkdownFiles()
 		for (const file of files) {
-
-			if (file.path.contains(this.settings.customersBaseFolder)) {
-				let customer: Customer = new Customer(file.basename, file.path);
-
+			if (file.path.contains(this.settings.peopleBaseFolder)) {
+				let person = file.basename;
 				let fileContent = await vault.cachedRead(file);
-				let lines = fileContent.split("\n").filter(line => line.includes("#"))
-
-				let customerArea = "";
-				let customerInitiative: CustomerInitiative | undefined;
-
+				let lines = fileContent.split("\n").filter(line => line.includes("#"));
 				for (const line of lines) {
-
-					if (updateRegex.test(line)) {
-						if (!(customerInitiative == null)) {
-							customerInitiative.addUpdate(line);
+					let updateLine = line.match(updateRegex);
+					if (updateLine) {
+						let extraction = new RegExp('\\[{2}(.*)#(.*)\\]{2}'); //[[Customer#Initiative]]
+						let extractionLine = updateLine[2].match(extraction);
+						if (extractionLine) {
+							let update = new CustomerUpdate();
+							update.customer = extractionLine[1];
+							update.initiative = extractionLine[2];
+							update.area = "";
+							update.date = new Date(updateLine[1]);
+							update.person = person;
+							update.raw = line;
+							this.customers.addUpdate(update);
+						} else {
+							console.log("ERR: Update line in file {0} has an incorrect backlink to the initiative: {1}".format(file.path, line));
 						}
-					} else if (initiativeRegex.test(line)) {
-						if (!(customerArea === "")) {
-							if (!(customerInitiative == null)) {
-								//Add the previous initiative, create a new one and add it to the customer object
-								customer.addInitiativeToArea(customerArea, customerInitiative);
-								customerInitiative = new CustomerInitiative(line, customerArea, customer.name);
-							} else {
-								customerInitiative = new CustomerInitiative(line, customerArea, customer.name);
-							}
-						}
-
-					} else if (areaRegex.test(line)) {
-						if (!(customerArea === "")) {
-							//We update the last area with the initiatives we had captured and re-initialize the initiatives
-							if (!(customerInitiative == null)) {
-								customer.addInitiativeToArea(customerArea, customerInitiative);
-								customerInitiative = undefined;
-							}
-						}
-						//We add the new area with an empty set of initiatives
-						customerArea = line;
-						customer.addInitiativeToArea(customerArea, customerInitiative);
 						
 					}
 				}
+			}
+		}
+	}
 
-				//If we finished going through the file, add the last initiatives we found in case there are any
-				if (!(customerArea === "") && !(customerInitiative == null))
-					customer.addInitiativeToArea(customerArea, customerInitiative);
 
+	async generateCustomerInitiatives(): Promise<void> {
+		const { vault } = this.app;
+		let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
+		const files = this.app.vault.getMarkdownFiles()
+		for (const file of files) {
+			if (file.path.contains(this.settings.customersBaseFolder)) {
+				let customer: Customer = new Customer(file.basename, file.path);
+				customer.addArea("");
+				let fileContent = await vault.cachedRead(file);
+				let lines = fileContent.split("\n"); //.filter(line => line.includes("#"))
+				for (let i = 0; i < lines.length; i++) {
+					let line = lines[i];
+					let initiativeLine = line.match(initiativeRegex);
+					if (initiativeLine) {
+						let initiative: CustomerInitiative = new CustomerInitiative(initiativeLine[1], "", customer.name);
+						initiative.raw = initiativeLine[0];
+						
+						//Try to get the status
+						initiative.status = "";
+						if (i+1 < lines.length) {
+							let nextLine = lines[i+1];
+							let statusRegex = new RegExp(this.settings.initiativeStatusRegex);
+							let statusLine = nextLine.match(statusRegex);
+							if (statusLine) {
+								initiative.status = statusLine[1];
+							} 
+						}
+
+						customer.addInitiativeToArea("", initiative);
+					}
+
+				}
 				this.customers.addCustomer(customer);
 			}
 		}
+	}
 
-		result = true;
-		return result;
+
+	async generateCustomers(): Promise<void> {
+		this.customers = new Customers();
+		//We need to do this in two steps to ensure we have all the customer initiatives
+		//before we start processing the updates from the people's notes
+		await this.generateCustomerInitiatives();
+		await this.generateUpdatesFromPeople();
 	}
 
 	async onload() {
