@@ -142,21 +142,49 @@ export class Customers {
                         md += "  {0} |".format(initiative.firstUpdate.toDateString());
 
                         for (let [person, update] of peopleLastUpdate) {
-                            md += " " + update.getLink("Last update") + "</br> "
+                            md += " " + update.getLinkToUpdateAndPerson("Last update") + "</br> "
                         }
 
                         md += " |\n"
-
                     }
-
                 }
-
             }
-
         }
 
         return md;
 
+    }
+
+    public renderAllUpdatesMD(filterSettings?: FilterSettings): string {
+        if (this.customers.size == 0)
+            return "No customer updates";
+        
+        let md = "";
+
+        for (let [, customer] of this.customers) {
+            for (let [, area] of customer.areas) {
+                for (let initiative of area.initiatives.values()) {
+
+                    let stringLiterals = "";
+                    stringLiterals += "{0} ".format(initiative.customer);
+                    stringLiterals += "{0} ".format(initiative.area);
+                    stringLiterals += "{0} ".format(initiative.name);
+
+                    if (!filterSettings || this.checkFilter(filterSettings, stringLiterals, initiative)) {
+                        //Sort updates in reverse chronological order
+                        initiative.updates.sort((a,b) => {return b.date.getTime() - a.date.getTime(); });
+                        for (let update of initiative.updates) {
+                            md += " \n !" + update.getLink();
+                        }
+                    }
+                    md += "\n---";
+                }
+                md += "\n---";
+            }
+            md += "\n---";
+        }
+
+        return md;
     }
 
     private checkFilter(filterSettings: FilterSettings, literals: string, initiative: CustomerInitiative): boolean {
