@@ -100,8 +100,8 @@ export class Customers {
             return "No customer updates";
         
         let md = "";
-        md += "| Customer | Area | Initiative | Updates | Days Ago | First seen | People |\n"
-        md += "|----------|------|------------|---------|----------|------------|--------|\n"
+        md += "| Customer | Initiative | Status | Updates | Days Ago | First seen | People |\n"
+        md += "|----------|------------|--------|---------|----------|------------|--------|\n"
 
         for (let [, customer] of this.customers) {
             for (let [, area] of customer.areas) {
@@ -135,8 +135,8 @@ export class Customers {
                     if (!filterSettings || this.checkFilter(filterSettings, stringLiterals, initiative)) {
 
                         md += "| {0} |".format(initiative.getCustomerLink(initiative.customer));
-                        md += "  {0} |".format(initiative.getAreaLink(initiative.area));
                         md += "  {0} |".format(initiative.getInitiativeLink(initiative.name));
+                        md += "  {0} |".format(initiative.status);
                         md += "  {0} |".format(initiative.numUpdates.toString());
                         md += "  {0} |".format(Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)).toString());
                         md += "  {0} |".format(initiative.firstUpdate.toDateString());
