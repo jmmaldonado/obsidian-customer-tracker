@@ -45,11 +45,20 @@ export class FilterModal extends Modal {
         new Setting(contentEl)
             .addButton((btn) =>
             btn
-                .setButtonText("Submit")
+                .setButtonText("Show summary table")
                 .setCta()
                 .onClick(() => {
                     this.close();
                     this.editor?.replaceSelection(this.customers.renderMD(this.filterSettings));
+                }));
+
+        new Setting(contentEl)
+        .addButton((btn) =>
+            btn
+                .setButtonText("Show all updates")
+                .onClick(() => {
+                    this.close();
+                    this.editor?.replaceSelection(this.customers.renderAllUpdatesMD(this.filterSettings));
                 }));
 	}
 
