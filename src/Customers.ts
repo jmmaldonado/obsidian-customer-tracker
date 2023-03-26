@@ -1,5 +1,6 @@
 import { CustomerInitiatives, CustomerInitiative } from "src/CustomerInitiatives"
 import { CustomerUpdate } from "./CustomerUpdates";
+import { FilterSettings } from "./FilterSettings";
 
 export class Customers {
     customers: Map<string, Customer>;
@@ -18,6 +19,33 @@ export class Customers {
 
     public addCustomer(customer: Customer) {
         this.customers.set(customer.name, customer);
+    }
+
+    public addUpdate(update: CustomerUpdate) {
+        let customer = this.getCustomer(update.customer);
+        if (customer) {
+            let initiatives = customer.getInitiativesFromArea(update.area);
+            if (initiatives) {
+                let initiative = initiatives.getInitiative(update.initiative);
+                if (initiative) {
+                    initiative.addUpdate(update);
+                } else {
+                    console.log("ERR: Initiative ({0}) not found in customers object".format(update.initiative));
+                    console.dir(initiatives);
+                    console.dir(customer);
+                    console.dir(this.customers);
+                }
+
+            } else {
+                console.log("ERR: Initiatives for area ({0}) not found in customers object". format(update.area));
+                console.dir(customer);
+                console.dir(this.customers);
+            }
+
+        } else {
+            console.log("ERR: Customer ({0}) not found in customers object".format(update.customer));
+            console.dir(this.customers);
+        }
     }
 
     public renderHTML(): string {
@@ -66,40 +94,8 @@ export class Customers {
         return html;
     }
 
-    public renderMD(): string {
-        if (this.customers.size == 0)
-            return "No customer updates";
 
-        let md = "";
-        md += "| Customer | Area | Initiative | Updates | Days Ago | First seen | People |\n"
-        md += "|----------|------|------------|---------|----------|------------|--------|\n"
-        for (let [, customer] of this.customers) {
-            for (let [, area] of customer.areas) {
-                for (let [, initiative] of area.initiatives) {
-                    let people: string[] = [];
-                    for (let update of initiative.updates) {
-                        if(!people.includes(update.person))
-                            people.push(update.person);
-                    }
-                    md += "| {0} |".format(initiative.getCustomerLink(initiative.customer));
-                    md += "  {0} |".format(initiative.getAreaLink(initiative.area));
-                    md += "  {0} |".format(initiative.getInitiativeLink(initiative.name));
-                    md += "  {0} |".format(initiative.numUpdates.toString());
-                    md += "  {0} |".format(Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)).toString());
-                    md += "  {0} |".format(initiative.firstUpdate.toDateString());
-
-                    for (let person of people) {
-                            md += " " + person + "</br> "
-                        }
-                    md += initiative.updates[0].getLink("Last update");
-                    md += " |\n"
-                }
-            }
-        }
-        return md;
-    }
-
-    public renderFilteredMD(filter: string): string {
+    public renderMD(filterSettings?: FilterSettings): string {
         if (this.customers.size == 0)
             return "No customer updates";
         
@@ -112,17 +108,31 @@ export class Customers {
                 for (let [, initiative] of area.initiatives) {
                     let people: string[] = [];
                     let peopleString: string = "";
+
+                    let peopleLastUpdate: Map<string, CustomerUpdate> = new Map<string, CustomerUpdate>();
                     for (let update of initiative.updates) {
+                        let personUpdate = peopleLastUpdate.get(update.person);
+                        if (personUpdate) {
+                            if (update.date > personUpdate.date) {
+                                peopleLastUpdate.set(update.person, update);
+                            }
+                        } else {
+                            peopleLastUpdate.set(update.person, update);
+                        }
+
+                        //We generate this array to filter easily on people later on
                         if(!people.includes(update.person))
                             people.push(update.person);
                             peopleString += " " + update.person;
                     }
 
-                    if (initiative.customer.contains(filter) ||
-                        initiative.area.contains(filter) ||
-                        initiative.name.contains(filter) ||
-                        peopleString.contains(filter) ||
-                        filter === "") {
+                    let stringLiterals = "";
+                    stringLiterals += "{0} ".format(initiative.customer);
+                    stringLiterals += "{0} ".format(initiative.area);
+                    stringLiterals += "{0} ".format(initiative.name);
+                    stringLiterals += "{0} ".format(peopleString);
+
+                    if (!filterSettings || this.checkFilter(filterSettings, stringLiterals, initiative)) {
 
                         md += "| {0} |".format(initiative.getCustomerLink(initiative.customer));
                         md += "  {0} |".format(initiative.getAreaLink(initiative.area));
@@ -131,13 +141,13 @@ export class Customers {
                         md += "  {0} |".format(Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)).toString());
                         md += "  {0} |".format(initiative.firstUpdate.toDateString());
 
-                        for (let person of people) {
-                                md += " " + person + "</br> "
-                            }
-                        md += initiative.updates[0].getLink("Last update");
+                        for (let [person, update] of peopleLastUpdate) {
+                            md += " " + update.getLink("Last update") + "</br> "
+                        }
+
                         md += " |\n"
 
-                        }
+                    }
 
                 }
 
@@ -148,16 +158,36 @@ export class Customers {
         return md;
 
     }
+
+    private checkFilter(filterSettings: FilterSettings, literals: string, initiative: CustomerInitiative): boolean {
+        let result = true;
+        
+        //Check if we need to filter based on the text entry for any literal related field
+        if (literals.contains(filterSettings.filter) || filterSettings.filter === "") 
+            result = result && true;
+        else 
+            result = result && false;
+
+        //Check if we need to filter based on the age of the latest update for the initiative
+        let lastUpdateDaysAgo = Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24));
+        result = result && (lastUpdateDaysAgo >= filterSettings.olderThan);
+
+        //Check if we need to filter only open initiatives
+        if (filterSettings.onlyOpen) 
+            result = result && initiative.status === "";
+
+        return result;
+    }
 }
 
 export class Customer {
     name: string;
-    file: string;
+    path: string;
     areas: Map<string, CustomerInitiatives>;
 
-    public constructor(name: string, file: string) {
+    public constructor(name: string, path: string) {
         this.name = name;
-        this.file = file;
+        this.path = path;
         this.areas = new Map();
     }
 
