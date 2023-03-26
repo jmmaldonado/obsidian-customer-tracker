@@ -8,6 +8,7 @@ export interface CustomerTrackerSettings {
 	peopleBaseFolder: string;
 	//areaRegex: string;
 	customerInitiativeRegex: string;
+	initiativeStatusRegex: string;
 	peopleDateRegex: string;
 	peopleUpdateRegex: string;
 
@@ -21,8 +22,9 @@ export const DEFAULT_SETTINGS: CustomerTrackerSettings = {
 	peopleBaseFolder: 'Spaces/Management/Team/',
 	//areaRegex: '^#{1}\\s(.*)',
 	customerInitiativeRegex: '^#{2}\\s(.*)',
-	peopleDateRegex: '^#{4}\\s[12]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])', //#### yyyy-MM-dd ...
-	peopleUpdateRegex: '^#{5}\\s\\[{2}.*\\]{2}.*', //##### [[...]] ...
+	initiativeStatusRegex: '^status::(.*)',
+	peopleDateRegex: '^#{4}\\s(\\d{4}-\\d{2}-\\d{2}).*', //#### yyyy-MM-dd ...
+	peopleUpdateRegex: '^#{5}\\s(\\d{4}-\\d{2}-\\d{2})\\s(\\[{2}.*\\]{2}).*', //##### yyyy-MM-dd [[...]] ...
 	customerAreasInMainFile: true
 }
 
@@ -63,17 +65,6 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		/*new Setting(containerEl)
-		.setName('Area regex')
-		.setDesc('Regex to detect customer areas in a customer note')
-		.addText(text => text
-			.setPlaceholder('^#{1}\\s(.*)')
-			.setValue(this.plugin.settings.areaRegex)
-			.onChange(async (value) => {
-				this.plugin.settings.areaRegex = value;
-				await this.plugin.saveSettings();
-			}));*/
-
 		new Setting(containerEl)
 			.setName('Customer initiative regex')
 			.setDesc('Regex to detect initiatives in a customer note (ie: ## AREA NAME @ INITIATIVE status::... )')
@@ -86,10 +77,21 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
+			.setName('Initiative status regex')
+			.setDesc('Regex to detect the status of an initiative (ie: status::... )')
+			.addText(text => text
+				.setPlaceholder('^status::(.*)')
+				.setValue(this.plugin.settings.initiativeStatusRegex)
+				.onChange(async (value) => {
+					this.plugin.settings.initiativeStatusRegex = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
 			.setName('People date regex')
 			.setDesc('Detects the update date in a person note (ie, #### yyyy-MM-dd ...)')
 			.addText(text => text
-				.setPlaceholder('^#{4}\\s[12]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])')
+				.setPlaceholder('^#{4}\\s(\\d{4}-\\d{2}-\\d{2}).*')
 				.setValue(this.plugin.settings.peopleDateRegex)
 				.onChange(async (value) => {
 					this.plugin.settings.peopleDateRegex = value;
@@ -100,7 +102,7 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 			.setName('People initiative update regex')
 			.setDesc('Detects the initiative update in a person note (ie, ##### [[...]] ...)')
 			.addText(text => text
-				.setPlaceholder('^#{5}\\s\\[{2}.*\\]{2}.*')
+				.setPlaceholder('^#{5}\\s(\\d{4}-\\d{2}-\\d{2})\\s(\\[{2}.*\\]{2}).*')
 				.setValue(this.plugin.settings.peopleUpdateRegex)
 				.onChange(async (value) => {
 					this.plugin.settings.peopleUpdateRegex = value;
