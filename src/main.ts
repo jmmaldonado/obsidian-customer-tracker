@@ -4,6 +4,7 @@ import { Customers, Customer } from 'src/Customers'
 import { CustomerInitiatives, CustomerInitiative } from 'src/CustomerInitiatives'
 import { FilterModal } from './FilterModal';
 import { CustomerUpdate } from './CustomerUpdates';
+import { SelectInitiativeModal } from './SelectInitiativeModal';
 
 
 export default class CustomerTracker extends Plugin {
@@ -91,6 +92,7 @@ export default class CustomerTracker extends Plugin {
 		await this.generateUpdatesFromPeople();
 	}
 
+
 	async onload() {
 		await this.loadSettings();
 		await this.generateCustomers();
@@ -107,7 +109,15 @@ export default class CustomerTracker extends Plugin {
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
 
-		// This adds an editor command that can perform some operation on the current editor instance
+		
+		this.addCommand({
+			id: 'add-update-header-current-note',
+			name: 'Add update header to current note',
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				new SelectInitiativeModal(this.app, this.customers, editor).open();
+			}
+		})
+
 		this.addCommand({
 			id: 'add-customer-tracking-summary-current-note',
 			name: 'Add customer tracking summary to current note',
@@ -121,6 +131,19 @@ export default class CustomerTracker extends Plugin {
 			name: 'Reload customer updates',
 			callback: () => {
 				this.generateCustomers();
+			}
+		});
+
+		this.addCommand({
+			id: 'add-initiatives-to-followup-in-person-note',
+			name: 'Add initiatives to followup in person note',
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				const file = this.app.workspace.getActiveFile();
+				if (file && file.path.contains(this.settings.peopleBaseFolder)) {
+					editor.replaceSelection(this.customers.renderInitiativesToFolloup(file.basename));
+				} else {
+					new Notice("Can only do this in a Person note under {0}".format(this.settings.peopleBaseFolder));
+				}
 			}
 		});
 
@@ -160,5 +183,7 @@ class SampleModal extends Modal {
 		contentEl.empty();
 	}
 }
+
+
 
 
