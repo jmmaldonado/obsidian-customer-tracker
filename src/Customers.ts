@@ -21,6 +21,15 @@ export class Customers {
         this.customers.set(customer.name, customer);
     }
 
+    public getAllOpenInitiatives(): CustomerInitiative[] {
+        let result: CustomerInitiative[] = [];
+        for (let [, customer] of this.customers) 
+            for (let [, area] of customer.areas) 
+                for (let [, initiative] of area.initiatives) 
+                result.push(initiative);
+        return result;
+    }
+
     public addUpdate(update: CustomerUpdate) {
         let customer = this.getCustomer(update.customer);
         if (customer) {
@@ -186,6 +195,47 @@ export class Customers {
 
         return md;
     }
+
+    public renderInitiativesToFolloup(person: string) : string {
+        if (this.customers.size == 0)
+            return "No customer updates";
+
+        let md = "";
+
+        for (let [, customer] of this.customers) {
+            for (let [, area] of customer.areas) {
+                for (let [, initiative] of area.initiatives) {
+                    let people: string[] = [];
+                    let peopleString: string = "";
+
+                    let peopleLastUpdate: Map<string, CustomerUpdate> = new Map<string, CustomerUpdate>();
+                    for (let update of initiative.updates) {
+                        //We generate this array to filter easily on people later on
+                        if(!people.includes(update.person))
+                            people.push(update.person);
+                            peopleString += " " + update.person;
+                    }
+
+                    let stringLiterals = "";
+                    stringLiterals += "{0} ".format(initiative.customer);
+                    stringLiterals += "{0} ".format(initiative.area);
+                    stringLiterals += "{0} ".format(initiative.name);
+                    stringLiterals += "{0} ".format(peopleString);
+
+                    let filterSettings = new FilterSettings();
+                    filterSettings.filter = person;
+                    filterSettings.onlyOpen = true;
+
+                    if (!filterSettings || this.checkFilter(filterSettings, stringLiterals, initiative)) {
+                        md += "##### {0} {1} \n\n".format(new Date().toISOString().split("T")[0], initiative.getInitiativeLink());
+                    }
+                }
+            }
+        }
+
+        return md;
+    }
+
 
     private checkFilter(filterSettings: FilterSettings, literals: string, initiative: CustomerInitiative): boolean {
         let result = true;
