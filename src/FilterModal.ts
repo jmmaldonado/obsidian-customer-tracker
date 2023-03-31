@@ -41,6 +41,14 @@ export class FilterModal extends Modal {
                 .onChange((value) => {
                     this.filterSettings.olderThan = Number(value)
                 }));
+
+        new Setting(contentEl)
+            .setName("Sort by last update")
+            .addToggle((toggle) => 
+                toggle.setValue(this.filterSettings.sortByLastUpdate)
+                .onChange((value) => {
+                    this.filterSettings.sortByLastUpdate = value
+                }));
     
         new Setting(contentEl)
             .addButton((btn) =>

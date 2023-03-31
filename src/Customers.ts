@@ -112,53 +112,69 @@ export class Customers {
         md += "| Customer | Initiative | Status | Updates | Days Ago | First seen | People |\n"
         md += "|----------|------------|--------|---------|----------|------------|--------|\n"
 
-        for (let [, customer] of this.customers) {
-            for (let [, area] of customer.areas) {
-                for (let [, initiative] of area.initiatives) {
-                    let people: string[] = [];
-                    let peopleString: string = "";
+        //TODO: Para poder ordenar por last updated, tenemos primero que generar una nueva lista con todas las iniciativas
+        //Y ordenarlas segun el parametro que consideremos en el los filterSettings, luego iterar sobre la nueva lista
+        //Mirando si el filtro aplica para mostrarla o no
 
-                    let peopleLastUpdate: Map<string, CustomerUpdate> = new Map<string, CustomerUpdate>();
-                    for (let update of initiative.updates) {
-                        let personUpdate = peopleLastUpdate.get(update.person);
-                        if (personUpdate) {
-                            if (update.date > personUpdate.date) {
-                                peopleLastUpdate.set(update.person, update);
-                            }
-                        } else {
-                            peopleLastUpdate.set(update.person, update);
-                        }
-
-                        //We generate this array to filter easily on people later on
-                        if(!people.includes(update.person))
-                            people.push(update.person);
-                            peopleString += " " + update.person;
-                    }
-
-                    let stringLiterals = "";
-                    stringLiterals += "{0} ".format(initiative.customer);
-                    stringLiterals += "{0} ".format(initiative.area);
-                    stringLiterals += "{0} ".format(initiative.name);
-                    stringLiterals += "{0} ".format(peopleString);
-
-                    if (!filterSettings || this.checkFilter(filterSettings, stringLiterals, initiative)) {
-
-                        md += "| {0} |".format(initiative.getCustomerLink(initiative.customer));
-                        md += "  {0} |".format(initiative.getInitiativeLink(initiative.name));
-                        md += "  {0} |".format(initiative.status);
-                        md += "  {0} |".format(initiative.numUpdates.toString());
-                        md += "  {0} |".format(Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)).toString());
-                        md += "  {0} |".format(initiative.firstUpdate.toDateString());
-
-                        for (let [person, update] of peopleLastUpdate) {
-                            md += " " + update.getLinkToUpdateAndPerson("Last update") + "</br> "
-                        }
-
-                        md += " |\n"
-                    }
+        let allInitiatives: CustomerInitiative[] = [];
+        for (let customer of this.customers.values()) {
+            for (let area of customer.areas.values()) {
+                for (let initiative of area.initiatives.values()) {
+                    allInitiatives.push(initiative);
                 }
             }
         }
+
+        if (filterSettings && filterSettings.sortByLastUpdate) {
+            allInitiatives.sort((a,b) => {return b.lastUpdate.getTime() - a.lastUpdate.getTime(); });
+        }
+
+
+
+        for (let initiative of allInitiatives) {
+            let people: string[] = [];
+            let peopleString: string = "";
+
+            let peopleLastUpdate: Map<string, CustomerUpdate> = new Map<string, CustomerUpdate>();
+            for (let update of initiative.updates) {
+                let personUpdate = peopleLastUpdate.get(update.person);
+                if (personUpdate) {
+                    if (update.date > personUpdate.date) {
+                        peopleLastUpdate.set(update.person, update);
+                    }
+                } else {
+                    peopleLastUpdate.set(update.person, update);
+                }
+
+                //We generate this array to filter easily on people later on
+                if(!people.includes(update.person))
+                    people.push(update.person);
+                    peopleString += " " + update.person;
+            }
+
+            let stringLiterals = "";
+            stringLiterals += "{0} ".format(initiative.customer);
+            stringLiterals += "{0} ".format(initiative.area);
+            stringLiterals += "{0} ".format(initiative.name);
+            stringLiterals += "{0} ".format(peopleString);
+
+            if (!filterSettings || this.checkFilter(filterSettings, stringLiterals, initiative)) {
+
+                md += "| {0} |".format(initiative.getCustomerLink(initiative.customer));
+                md += "  {0} |".format(initiative.getInitiativeLink(initiative.name));
+                md += "  {0} |".format(initiative.status);
+                md += "  {0} |".format(initiative.numUpdates.toString());
+                md += "  {0} |".format(Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)).toString());
+                md += "  {0} |".format(initiative.firstUpdate.toDateString());
+
+                for (let [person, update] of peopleLastUpdate) {
+                    md += " " + update.getLinkToUpdateAndPerson("Last update") + "</br> "
+                }
+
+                md += " |\n"
+            }
+        }
+
 
         return md;
 
