@@ -105,7 +105,14 @@ export default class CustomerTracker extends Plugin {
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
 
-		
+		this.addCommand({
+			id: 'open-customer-tracker-modal-window',
+			name: 'Open filtering window',
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				new SelectInitiativeModal(this.app, this.customers, editor).open();
+			}
+		})
+
 		this.addCommand({
 			id: 'add-update-header-current-note',
 			name: 'Add update header to current note',
