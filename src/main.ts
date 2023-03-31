@@ -92,11 +92,7 @@ export default class CustomerTracker extends Plugin {
 		await this.generateUpdatesFromPeople();
 	}
 
-
-	async onload() {
-		await this.loadSettings();
-		await this.generateCustomers();
-
+	registerCommands() {
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Customer tracker', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
@@ -146,10 +142,21 @@ export default class CustomerTracker extends Plugin {
 				}
 			}
 		});
+	}
+
+	registerContextMenu() {
+
+	}
+
+
+	async onload() {
+		await this.loadSettings();
+		await this.generateCustomers();
+		this.registerCommands();
+		this.registerContextMenu();
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new CustomerTrackerSettingsTab(this.app, this));
-
 	}
 
 	onunload() {
