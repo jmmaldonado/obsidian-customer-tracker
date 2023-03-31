@@ -171,6 +171,7 @@ export class Customers {
         let md = "";
 
         for (let [, customer] of this.customers) {
+            let shownUpdates = false;
             for (let [, area] of customer.areas) {
                 for (let initiative of area.initiatives.values()) {
 
@@ -185,12 +186,13 @@ export class Customers {
                         for (let update of initiative.updates) {
                             md += " \n !" + update.getLink();
                         }
+                        shownUpdates = true;
                     }
-                    md += "\n---";
+                    if (shownUpdates) md += "\n---";
                 }
-                md += "\n---";
+                if (shownUpdates) md += "\n---";
             }
-            md += "\n---";
+            if (shownUpdates) md += "\n---";
         }
 
         return md;
