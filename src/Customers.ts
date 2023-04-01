@@ -112,7 +112,7 @@ export class Customers {
         md += "| Customer | Initiative | Status | Updates | Days Ago | First seen | People |\n"
         md += "|----------|------------|--------|---------|----------|------------|--------|\n"
 
-        //TODO: Para poder ordenar por last updated, tenemos primero que generar una nueva lista con todas las iniciativas
+        //Para poder ordenar por last updated, tenemos primero que generar una nueva lista con todas las iniciativas
         //Y ordenarlas segun el parametro que consideremos en el los filterSettings, luego iterar sobre la nueva lista
         //Mirando si el filtro aplica para mostrarla o no
 
@@ -128,8 +128,6 @@ export class Customers {
         if (filterSettings && filterSettings.sortByLastUpdate) {
             allInitiatives.sort((a,b) => {return b.lastUpdate.getTime() - a.lastUpdate.getTime(); });
         }
-
-
 
         for (let initiative of allInitiatives) {
             let people: string[] = [];
