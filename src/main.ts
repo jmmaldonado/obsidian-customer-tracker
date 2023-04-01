@@ -5,6 +5,7 @@ import { CustomerInitiatives, CustomerInitiative } from 'src/CustomerInitiatives
 import { FilterModal } from './FilterModal';
 import { CustomerUpdate } from './CustomerUpdates';
 import { SelectInitiativeModal } from './SelectInitiativeModal';
+import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './InitiativeUpdatesView';
 
 
 export default class CustomerTracker extends Plugin {
@@ -109,7 +110,7 @@ export default class CustomerTracker extends Plugin {
 			id: 'open-customer-tracker-modal-window',
 			name: 'Open filtering window',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				new SelectInitiativeModal(this.app, this.customers, editor).open();
+				this.activateView();
 			}
 		})
 
@@ -155,6 +156,20 @@ export default class CustomerTracker extends Plugin {
 
 	}
 
+	async activateView() {
+		//Only allows one InitiativeUpdates view
+		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
+	
+		await this.app.workspace.getRightLeaf(false).setViewState({
+		  type: INITIATIVEUPDATES_VIEW_TYPE,
+		  active: true,
+		});
+	
+		this.app.workspace.revealLeaf(
+		  this.app.workspace.getLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE)[0]
+		);
+	  }
+
 
 	async onload() {
 		await this.loadSettings();
@@ -164,10 +179,15 @@ export default class CustomerTracker extends Plugin {
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new CustomerTrackerSettingsTab(this.app, this));
+
+		this.registerView(
+			INITIATIVEUPDATES_VIEW_TYPE,
+			(leaf) => new InitiativeUpdatesView(leaf)
+		  );
 	}
 
 	onunload() {
-
+		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
 	}
 
 	async loadSettings() {
