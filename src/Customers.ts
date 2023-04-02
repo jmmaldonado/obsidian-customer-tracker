@@ -312,4 +312,16 @@ export class Customer {
         areaInitiatives.setInitiative(initiative.name, initiative);    
         this.areas.set(area, areaInitiatives);
     }
+
+    public getInitiative(initiativeName: string): CustomerInitiative | null {
+        let result = null;
+        for (let area of this.areas.values()) {
+            for (let initiative of area.initiatives.values()) {
+                if (initiative.name == initiativeName) {
+                    result = initiative;
+                }
+            }
+        }
+        return result;
+    }
 }
