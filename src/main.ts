@@ -12,7 +12,7 @@ export default class CustomerTracker extends Plugin {
 	settings: CustomerTrackerSettings;
 	customers: Customers;
 
-
+	
 	async generateUpdatesFromPeople(): Promise<void> {
 		const { vault } = this.app;
 		let updateRegex = new RegExp(this.settings.peopleUpdateRegex);
@@ -154,9 +154,61 @@ export default class CustomerTracker extends Plugin {
 
 	registerContextMenu() {
 
+		this.app.workspace.on("editor-menu", (menu, editor, view) => {
+			menu.addItem((item) => { 
+				item
+					.setTitle("Show initiative updates")
+					.setIcon("document")
+					.onClick( () => {
+						this.showUpdatesForSelectedInitiative();
+					});
+			});
+		})
+
 	}
 
-	async activateView() {
+	public showUpdatesForSelectedInitiative() {
+		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!view)
+			return;
+		
+		if (view.getMode() === "source") {
+			const file = this.app.workspace.getActiveFile();
+			if (file && file.path.contains(this.settings.customersBaseFolder)) {
+				let customerName = file.basename;
+				let editor = view.editor;
+				if (editor) {
+					let lineUnderCaret = editor.getLine(editor.getCursor().line).trim();
+					let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
+					let initiativeLine = lineUnderCaret.match(initiativeRegex);
+					if (initiativeLine) {
+						//The line belongs to an initiative (or at least matches its regex) we need to find it in customers object
+						let customer = this.customers.getCustomer(customerName);
+						if (customer) {
+							let initiative = customer.getInitiative(initiativeLine[1]);
+							if (initiative) {
+								console.dir(initiative.updates);
+							} else {
+								new Notice("Could not find Initiative {0} under Customer {1}".format(initiativeLine[1], customerName));
+							}							
+						} else {
+							new Notice("Could not find Customer {0} - Maybe reprocess the customer updates".format(customerName));
+						}
+					} else {
+						new Notice("Current line does not correspond to any customer initiative");
+					}
+				}	
+			} else {
+				new Notice("Can only do this in a Customer note under {0}".format(this.settings.customersBaseFolder));
+			}
+		}
+	}
+
+
+
+
+
+	public async activateView() {
 		//Only allows one InitiativeUpdates view
 		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
 	
