@@ -5,6 +5,7 @@ export class CustomerUpdate {
     date: Date;
     person: string;
     raw: string;
+    filePath: string;
     
     public getLinkToUpdateAndPerson(text?: string): string {
         let clean = this.raw;

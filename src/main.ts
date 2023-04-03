@@ -12,7 +12,7 @@ export default class CustomerTracker extends Plugin {
 	settings: CustomerTrackerSettings;
 	customers: Customers;
 
-	
+
 	async generateUpdatesFromPeople(): Promise<void> {
 		const { vault } = this.app;
 		let updateRegex = new RegExp(this.settings.peopleUpdateRegex);
@@ -35,6 +35,7 @@ export default class CustomerTracker extends Plugin {
 							update.date = new Date(updateLine[1]);
 							update.person = person;
 							update.raw = line;
+							update.filePath = file.path;
 							this.customers.addUpdate(update);
 						} else {
 							console.log("ERR: Update line in file {0} has an incorrect backlink to the initiative: {1}".format(file.path, line));
