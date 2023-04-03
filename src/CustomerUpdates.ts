@@ -1,3 +1,5 @@
+import { TFile } from "obsidian";
+
 export class CustomerUpdate {
     customer: string;
     area: string;
@@ -5,7 +7,7 @@ export class CustomerUpdate {
     date: Date;
     person: string;
     raw: string;
-    filePath: string;
+    file: TFile;
     
     public getLinkToUpdateAndPerson(text?: string): string {
         let clean = this.raw;
