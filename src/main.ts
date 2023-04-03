@@ -6,6 +6,7 @@ import { FilterModal } from './FilterModal';
 import { CustomerUpdate } from './CustomerUpdates';
 import { SelectInitiativeModal } from './SelectInitiativeModal';
 import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './InitiativeUpdatesView';
+import { getLinesOfHeader } from './Utils';
 
 
 export default class CustomerTracker extends Plugin {
@@ -35,7 +36,7 @@ export default class CustomerTracker extends Plugin {
 							update.date = new Date(updateLine[1]);
 							update.person = person;
 							update.raw = line;
-							update.filePath = file.path;
+							update.file = file;
 							this.customers.addUpdate(update);
 						} else {
 							console.log("ERR: Update line in file {0} has an incorrect backlink to the initiative: {1}".format(file.path, line));
@@ -111,7 +112,7 @@ export default class CustomerTracker extends Plugin {
 			id: 'open-customer-tracker-modal-window',
 			name: 'Open filtering window',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.activateView();
+				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.customers).open();
 			}
 		})
 
@@ -161,55 +162,16 @@ export default class CustomerTracker extends Plugin {
 					.setTitle("Show initiative updates")
 					.setIcon("document")
 					.onClick( () => {
-						this.showUpdatesForSelectedInitiative();
+						//this.showUpdatesForSelectedInitiative();
+						this.showUpdatesForInitiativeAtCurrentLine();
 					});
 			});
 		})
 
 	}
 
-	public showUpdatesForSelectedInitiative() {
-		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (!view)
-			return;
-		
-		if (view.getMode() === "source") {
-			const file = this.app.workspace.getActiveFile();
-			if (file && file.path.contains(this.settings.customersBaseFolder)) {
-				let customerName = file.basename;
-				let editor = view.editor;
-				if (editor) {
-					let lineUnderCaret = editor.getLine(editor.getCursor().line).trim();
-					let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
-					let initiativeLine = lineUnderCaret.match(initiativeRegex);
-					if (initiativeLine) {
-						//The line belongs to an initiative (or at least matches its regex) we need to find it in customers object
-						let customer = this.customers.getCustomer(customerName);
-						if (customer) {
-							let initiative = customer.getInitiative(initiativeLine[1]);
-							if (initiative) {
-								console.dir(initiative.updates);
-							} else {
-								new Notice("Could not find Initiative {0} under Customer {1}".format(initiativeLine[1], customerName));
-							}							
-						} else {
-							new Notice("Could not find Customer {0} - Maybe reprocess the customer updates".format(customerName));
-						}
-					} else {
-						new Notice("Current line does not correspond to any customer initiative");
-					}
-				}	
-			} else {
-				new Notice("Can only do this in a Customer note under {0}".format(this.settings.customersBaseFolder));
-			}
-		}
-	}
 
-
-
-
-
-	public async activateView() {
+	public async showUpdatesForInitiativeAtCurrentLine() {
 		//Only allows one InitiativeUpdates view
 		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
 	
@@ -217,7 +179,7 @@ export default class CustomerTracker extends Plugin {
 		  type: INITIATIVEUPDATES_VIEW_TYPE,
 		  active: true,
 		});
-	
+
 		this.app.workspace.revealLeaf(
 		  this.app.workspace.getLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE)[0]
 		);
@@ -235,7 +197,7 @@ export default class CustomerTracker extends Plugin {
 
 		this.registerView(
 			INITIATIVEUPDATES_VIEW_TYPE,
-			(leaf) => new InitiativeUpdatesView(leaf)
+			(leaf) => new InitiativeUpdatesView(leaf, this.app, this.customers, this.settings)
 		  );
 	}
 
