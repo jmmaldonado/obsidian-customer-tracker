@@ -4,8 +4,7 @@
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "This plugin allows you to summarize the updates happening at different initiatives and areas of customers",
-	"author": "Obsidian",
+	"author": "Maldini",
 	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
 	"isDesktopOnly": false
 }

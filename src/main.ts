@@ -3,85 +3,99 @@ import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS }
 import { Customers, Customer } from 'src/Customers'
 import { CustomerInitiatives, CustomerInitiative } from 'src/CustomerInitiatives'
 import { FilterModal } from './FilterModal';
+import { CustomerUpdate } from './CustomerUpdates';
+import { SelectInitiativeModal } from './SelectInitiativeModal';
+import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './InitiativeUpdatesView';
+import { getLinesOfHeader } from './Utils';
 
 
 export default class CustomerTracker extends Plugin {
 	settings: CustomerTrackerSettings;
 	customers: Customers;
 
-	async generateCustomers(): Promise<boolean> {
+
+	async generateUpdatesFromPeople(): Promise<void> {
 		const { vault } = this.app;
-		let result = false;
-
-		const fileContents: string[] = await Promise.all(
-			vault.getMarkdownFiles().map((file) => vault.cachedRead(file))
-		);
-
-		let areaRegex = new RegExp(this.settings.areaRegex);
-		let initiativeRegex = new RegExp(this.settings.initiativeRegex);
-		let updateRegex = new RegExp(this.settings.updateRegex);
-
-		this.customers = new Customers();
+		let updateRegex = new RegExp(this.settings.peopleUpdateRegex);
 		const files = this.app.vault.getMarkdownFiles()
 		for (const file of files) {
-
-			if (file.path.contains(this.settings.customersBaseFolder)) {
-				let customer: Customer = new Customer(file.basename, file.path);
-
+			if (file.path.contains(this.settings.peopleBaseFolder)) {
+				let person = file.basename;
 				let fileContent = await vault.cachedRead(file);
-				let lines = fileContent.split("\n").filter(line => line.includes("#"))
-
-				let customerArea = "";
-				let customerInitiative: CustomerInitiative | undefined;
-
+				let lines = fileContent.split("\n").filter(line => line.includes("#"));
 				for (const line of lines) {
-
-					if (updateRegex.test(line)) {
-						if (!(customerInitiative == null)) {
-							customerInitiative.addUpdate(line);
+					let updateLine = line.match(updateRegex);
+					if (updateLine) {
+						let extraction = new RegExp('\\[{2}(.*)#(.*)\\]{2}'); //[[Customer#Initiative]]
+						let extractionLine = updateLine[2].match(extraction);
+						if (extractionLine) {
+							let update = new CustomerUpdate();
+							update.customer = extractionLine[1];
+							update.initiative = extractionLine[2];
+							update.area = "";
+							update.date = new Date(updateLine[1]);
+							update.person = person;
+							update.raw = line;
+							update.file = file;
+							this.customers.addUpdate(update);
+						} else {
+							console.log("ERR: Update line in file {0} has an incorrect backlink to the initiative: {1}".format(file.path, line));
 						}
-					} else if (initiativeRegex.test(line)) {
-						if (!(customerArea === "")) {
-							if (!(customerInitiative == null)) {
-								//Add the previous initiative, create a new one and add it to the customer object
-								customer.addInitiativeToArea(customerArea, customerInitiative);
-								customerInitiative = new CustomerInitiative(line, customerArea, customer.name);
-							} else {
-								customerInitiative = new CustomerInitiative(line, customerArea, customer.name);
-							}
-						}
-
-					} else if (areaRegex.test(line)) {
-						if (!(customerArea === "")) {
-							//We update the last area with the initiatives we had captured and re-initialize the initiatives
-							if (!(customerInitiative == null)) {
-								customer.addInitiativeToArea(customerArea, customerInitiative);
-								customerInitiative = undefined;
-							}
-						}
-						//We add the new area with an empty set of initiatives
-						customerArea = line;
-						customer.addInitiativeToArea(customerArea, customerInitiative);
 						
 					}
 				}
+			}
+		}
+	}
 
-				//If we finished going through the file, add the last initiatives we found in case there are any
-				if (!(customerArea === "") && !(customerInitiative == null))
-					customer.addInitiativeToArea(customerArea, customerInitiative);
 
+	async generateCustomerInitiatives(): Promise<void> {
+		const { vault } = this.app;
+		let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
+		const files = this.app.vault.getMarkdownFiles()
+		for (const file of files) {
+			if (file.path.contains(this.settings.customersBaseFolder)) {
+				let customer: Customer = new Customer(file.basename, file.path);
+				customer.addArea("");
+				let fileContent = await vault.cachedRead(file);
+				let lines = fileContent.split("\n"); //.filter(line => line.includes("#"))
+				for (let i = 0; i < lines.length; i++) {
+					let line = lines[i];
+					let initiativeLine = line.match(initiativeRegex);
+					if (initiativeLine) {
+						let initiative: CustomerInitiative = new CustomerInitiative(initiativeLine[1], "", customer.name);
+						initiative.raw = initiativeLine[0];
+						
+						//Try to get the status
+						initiative.status = "";
+						if (i+1 < lines.length) {
+							let nextLine = lines[i+1];
+							let statusRegex = new RegExp(this.settings.initiativeStatusRegex);
+							let statusLine = nextLine.match(statusRegex);
+							if (statusLine) {
+								initiative.status = statusLine[1];
+							} 
+						}
+
+						customer.addInitiativeToArea("", initiative);
+					}
+
+				}
 				this.customers.addCustomer(customer);
 			}
 		}
-
-		result = true;
-		return result;
 	}
 
-	async onload() {
-		await this.loadSettings();
-		await this.generateCustomers();
 
+	async generateCustomers(): Promise<void> {
+		this.customers = new Customers();
+		//We need to do this in two steps to ensure we have all the customer initiatives
+		//before we start processing the updates from the people's notes
+		await this.generateCustomerInitiatives();
+		await this.generateUpdatesFromPeople();
+	}
+
+	registerCommands() {
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Customer tracker', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
@@ -89,18 +103,31 @@ export default class CustomerTracker extends Plugin {
 			if (this.customers) {
 				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.customers).open();
 			}
-			//new Notice('This is a notice!');
 
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
 
-		// This adds an editor command that can perform some operation on the current editor instance
 		this.addCommand({
-			id: 'add-customer-tracking-current-note',
-			name: 'Add customer tracking to current note',
+			id: 'open-customer-tracker-modal-window',
+			name: 'Open filtering window',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				//console.log(editor.getSelection());
+				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.customers).open();
+			}
+		})
+
+		this.addCommand({
+			id: 'add-update-header-current-note',
+			name: 'Add update header to current note',
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				new SelectInitiativeModal(this.app, this.customers, editor).open();
+			}
+		})
+
+		this.addCommand({
+			id: 'add-customer-tracking-summary-current-note',
+			name: 'Add customer tracking summary to current note',
+			editorCallback: (editor: Editor, view: MarkdownView) => {
 				editor.replaceSelection(this.customers.renderMD());
 			}
 		});
@@ -113,41 +140,69 @@ export default class CustomerTracker extends Plugin {
 			}
 		});
 
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
 		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						//new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
+			id: 'add-initiatives-to-followup-in-person-note',
+			name: 'Add initiatives to followup in person note',
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				const file = this.app.workspace.getActiveFile();
+				if (file && file.path.contains(this.settings.peopleBaseFolder)) {
+					editor.replaceSelection(this.customers.renderInitiativesToFolloup(file.basename));
+				} else {
+					new Notice("Can only do this in a Person note under {0}".format(this.settings.peopleBaseFolder));
 				}
 			}
 		});
+	}
+
+	registerContextMenu() {
+
+		this.app.workspace.on("editor-menu", (menu, editor, view) => {
+			menu.addItem((item) => { 
+				item
+					.setTitle("Show initiative updates")
+					.setIcon("document")
+					.onClick( () => {
+						//this.showUpdatesForSelectedInitiative();
+						this.showUpdatesForInitiativeAtCurrentLine();
+					});
+			});
+		})
+
+	}
+
+
+	public async showUpdatesForInitiativeAtCurrentLine() {
+		//Only allows one InitiativeUpdates view
+		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
+	
+		await this.app.workspace.getRightLeaf(false).setViewState({
+		  type: INITIATIVEUPDATES_VIEW_TYPE,
+		  active: true,
+		});
+
+		this.app.workspace.revealLeaf(
+		  this.app.workspace.getLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE)[0]
+		);
+	  }
+
+
+	async onload() {
+		await this.loadSettings();
+		await this.generateCustomers();
+		this.registerCommands();
+		this.registerContextMenu();
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new CustomerTrackerSettingsTab(this.app, this));
 
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		/*this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});*/
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		//this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		this.registerView(
+			INITIATIVEUPDATES_VIEW_TYPE,
+			(leaf) => new InitiativeUpdatesView(leaf, this.app, this.customers, this.settings)
+		  );
 	}
 
 	onunload() {
-
+		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
 	}
 
 	async loadSettings() {
@@ -177,5 +232,7 @@ class SampleModal extends Modal {
 		contentEl.empty();
 	}
 }
+
+
 
 

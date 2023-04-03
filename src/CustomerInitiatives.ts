@@ -40,6 +40,8 @@ export class CustomerInitiative {
     numUpdates: number;
     firstUpdate: Date;
     lastUpdate: Date;
+    status: string;
+    raw: string;
 
     public constructor(name: string, area: string, customer: string) {
         this.name = name;
@@ -49,9 +51,10 @@ export class CustomerInitiative {
         this.numUpdates = 0;
         this.firstUpdate = new Date("9999-12-31");
         this.lastUpdate = new Date("1900-01-01");
+        this.status = "";
     }
 
-    public addUpdate(updateLine: string) {
+    public addUpdateFromLine(updateLine: string) {
 
         let date = this.extractDate(updateLine);
         let person = this.extractPerson(updateLine);
@@ -69,10 +72,13 @@ export class CustomerInitiative {
         update.person = person;
         update.raw = updateLine;
 
-        this.numUpdates++;
-        this.firstUpdate = (date < this.firstUpdate) ? date : this.firstUpdate;
-        this.lastUpdate = (date > this.lastUpdate) ? date : this.lastUpdate;
+        this.addUpdate(update);
+    }
 
+    public addUpdate(update: CustomerUpdate) {
+        this.numUpdates++;
+        this.firstUpdate = (update.date < this.firstUpdate) ? update.date : this.firstUpdate;
+        this.lastUpdate = (update.date > this.lastUpdate) ? update.date : this.lastUpdate;
         this.updates.push(update);
     }
 
