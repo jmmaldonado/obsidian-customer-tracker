@@ -50,29 +50,25 @@ export class InitiativeUpdatesView extends ItemView {
         const file = this.app.workspace.getActiveFile();
         let lineAtCaret = editor.getLine(editor.getCursor().line).trim();
 
-        //Si estamos en un fichero de cliente, entonces la linea debería corresponderse con la regex de Customer Initiative
-        //Con esa initiative nos vamos a buscar todos sus updates y recorremos ese fichero de la persona de cada Update
-        if (file && file.path.contains(this.settings.customersBaseFolder)) {
-            let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
-            customerName = file.basename;
-            let initiativeLine = lineAtCaret.match(initiativeRegex);
-            if (initiativeLine) {
-                initiativeName = initiativeLine[1];
-            }
-        }
+        //If the current file is under the CustomerBase folder, the line should match Customer Initiative Regex defined in settings
+        //Since we have the customer name (file.basename) we can just gather the initiative and move on to finding all the updates
+        if (file) {
 
-        //Si estamos en un fichero de persona, entonces la línea debería corresponderse con la regex de people update
-        //De esa linea tenemos que extraer el Customer y la initiative para poder sacar todos sus updates y recorremos el fichero de la persona de cada udpate
-        if (file && file.path.contains(this.settings.peopleBaseFolder)) {
-            let updateRegex = new RegExp(this.settings.peopleUpdateRegex);
-            let updateLine = lineAtCaret.match(updateRegex);
-            if (updateLine) {
-                let extraction = new RegExp('\\[{2}(.*)#(.*)\\]{2}'); //[[Customer#Initiative]]
-                let extractionLine = updateLine[2].match(extraction);
+            if (file.path.contains(this.settings.customersBaseFolder)) {
+                let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
+                customerName = file.basename;
+                let initiativeLine = lineAtCaret.match(initiativeRegex);
+                if (initiativeLine) {
+                    initiativeName = initiativeLine[1];
+                }
+            } else {
+                //If we are not in a customer file, we just try to match with a Customer#Initiative backlink regex
+                let extraction = new RegExp('.*\\[{2}(.*)#(.*)\\]{2}.*'); //...[[Customer#Initiative]]...
+                let extractionLine = lineAtCaret.match(extraction);
                 if (extractionLine) {
                     customerName = extractionLine[1];
                     initiativeName = extractionLine[2];
-                }
+                }   
             }
         }
 
@@ -92,6 +88,9 @@ export class InitiativeUpdatesView extends ItemView {
             }
             let header = "{0}: {1}".format(initiative.customer, initiative.name);
             await this.setDisplayText(updates, header);
+        } else {
+            new Notice("Could not find Initiative at current line");
+            console.error("ERR (InitiativeUpdatesView.ts): Could not find Customer or Initiative at file: {0} :: in line: {1}".format(file == null ? "No file detected" : file.path, lineAtCaret))
         }
 
     }
