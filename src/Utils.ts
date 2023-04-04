@@ -33,7 +33,6 @@ export async function getLinesOfHeader(vault: Vault, file: TFile | null, header:
 
         if (found) {
             let finished = false;
-            result += header + "\n";
             //We start looking for the next same level or higher header just below our found header
             while (!finished && idx < lines.length) {
                 let line = lines[idx];
