@@ -85,6 +85,7 @@ export class InitiativeUpdatesView extends ItemView {
         let initiative = this.customers.getCustomer(customerName)?.getInitiative(initiativeName);
         let updates: string = ""
         if (initiative) {
+            initiative.updates.sort((a,b) => {return b.date.getTime() - a.date.getTime(); });
             for (let update of initiative.updates) {
                 updates += await getLinesOfHeader(this.app.vault, update.file, update.raw) + "\n";
             }
