@@ -26,10 +26,10 @@ export class InitiativeUpdatesView extends ItemView {
         return "Initiative updates view";
     }
 
-    public async setDisplayText(text: string) {
+    public async setDisplayText(text: string, header: string) {
         const container = this.containerEl.children[1];
         container.empty();
-        container.createEl("h4", { text: "Initiative updates view" });
+        container.createEl("h2", { text: header });
         let spanEl = container.createSpan();
         /*let mpv = new MarkdownPreviewView(spanEl);
         mpv.set(text, false);*/
@@ -87,9 +87,11 @@ export class InitiativeUpdatesView extends ItemView {
         if (initiative) {
             initiative.updates.sort((a,b) => {return b.date.getTime() - a.date.getTime(); });
             for (let update of initiative.updates) {
+                updates += "##### " + update.date.toDateString() + " " + update.person + "\n";
                 updates += await getLinesOfHeader(this.app.vault, update.file, update.raw) + "\n";
             }
-            await this.setDisplayText(updates)
+            let header = "{0}: {1}".format(initiative.customer, initiative.name);
+            await this.setDisplayText(updates, header);
         }
 
     }
