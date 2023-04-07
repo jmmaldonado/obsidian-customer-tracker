@@ -1,4 +1,5 @@
 import { CustomerInitiative } from "./CustomerInitiative";
+import { CustomerUpdate } from "./CustomerUpdate";
 
 export class CustomerInitiatives {
     initiatives: Map<string, CustomerInitiative>;
@@ -28,6 +29,17 @@ export class CustomerInitiatives {
 
     public getInitiative(name: string): CustomerInitiative | undefined {
         return this.initiatives.get(name);
+    }
+
+    public addUpdate(update: CustomerUpdate) {
+        let initiative = this.getInitiative(update.initiative);
+        if (initiative) {
+            initiative.addUpdate(update);
+        } else {
+            initiative = new CustomerInitiative(update.initiative, update.area, update.customer);
+            initiative.addUpdate(update);
+            this.setInitiative(update.initiative, initiative);
+        }
     }
 
 }
