@@ -1,15 +1,15 @@
 import { App, Editor, Modal, Setting } from "obsidian";
-import { Customers } from "./Customers";
+import { CustomerTracker } from "./Customers";
 import { FilterSettings } from "./FilterSettings";
 
 export class FilterModal extends Modal {
-	customers: Customers;
+	tracker: CustomerTracker;
     editor?: Editor;
     filterSettings: FilterSettings;
 
-	constructor(app: App, editor: Editor | undefined, customers: Customers) {
+	constructor(app: App, editor: Editor | undefined, tracker: CustomerTracker) {
 		super(app);
-		this.customers = customers;
+		this.tracker = tracker;
         this.editor = editor;
         this.filterSettings = new FilterSettings();
 	}
@@ -57,7 +57,7 @@ export class FilterModal extends Modal {
                 .setCta()
                 .onClick(() => {
                     this.close();
-                    this.editor?.replaceSelection(this.customers.renderMD(this.filterSettings));
+                    this.editor?.replaceSelection(this.tracker.renderMD(this.filterSettings));
                 }));
 
         new Setting(contentEl)
@@ -66,7 +66,7 @@ export class FilterModal extends Modal {
                 .setButtonText("Show all updates")
                 .onClick(() => {
                     this.close();
-                    this.editor?.replaceSelection(this.customers.renderAllUpdatesMD(this.filterSettings));
+                    this.editor?.replaceSelection(this.tracker.renderAllUpdatesMD(this.filterSettings));
                 }));
 	}
 

@@ -2,14 +2,14 @@ import { CustomerInitiatives, CustomerInitiative } from "src/CustomerInitiatives
 import { CustomerUpdate } from "./CustomerUpdates";
 import { FilterSettings } from "./FilterSettings";
 
-export class Customers {
+export class CustomerTracker {
     customers: Map<string, Customer>;
 
     public constructor() {
         this.customers = new Map<string, Customer>();
     }
 
-    public contains(customer: string): boolean {
+    public containsCustomer(customer: string): boolean {
         return this.customers.has(customer);
     }
 

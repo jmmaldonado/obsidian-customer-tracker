@@ -1,20 +1,20 @@
 import { it } from "node:test";
 import { App, Editor, FuzzyMatch, FuzzySuggestModal } from "obsidian";
 import { CustomerInitiative } from "./CustomerInitiatives";
-import { Customers } from "./Customers";
+import { CustomerTracker } from "./Customers";
 
 export class SelectInitiativeModal extends FuzzySuggestModal<CustomerInitiative> {
     private editor: Editor;
-    private customers: Customers;
+    private tracker: CustomerTracker;
     
-    public constructor(app: App, customers: Customers, editor: Editor) {
+    public constructor(app: App, tracker: CustomerTracker, editor: Editor) {
         super(app);
-        this.customers = customers;
+        this.tracker = tracker;
         this.editor = editor;
     }
 
     getItems(): CustomerInitiative[] {
-        return this.customers.getAllOpenInitiatives();
+        return this.tracker.getAllOpenInitiatives();
     }
 
     getItemText(initiative: CustomerInitiative): string {

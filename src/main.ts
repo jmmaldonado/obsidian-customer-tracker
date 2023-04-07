@@ -1,6 +1,6 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS } from './Settings';
-import { Customers, Customer } from 'src/Customers'
+import { CustomerTracker, Customer } from 'src/Customers'
 import { CustomerInitiatives, CustomerInitiative } from 'src/CustomerInitiatives'
 import { FilterModal } from './FilterModal';
 import { CustomerUpdate } from './CustomerUpdates';
@@ -9,9 +9,9 @@ import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './Initiative
 import { getLinesOfHeader } from './Utils';
 
 
-export default class CustomerTracker extends Plugin {
+export default class CustomerTracking extends Plugin {
 	settings: CustomerTrackerSettings;
-	customers: Customers;
+	tracker: CustomerTracker;
 
 
 	async generateUpdatesFromPeople(): Promise<void> {
@@ -37,7 +37,7 @@ export default class CustomerTracker extends Plugin {
 							update.person = person;
 							update.raw = line;
 							update.file = file;
-							this.customers.addUpdate(update);
+							this.tracker.addUpdate(update);
 						} else {
 							console.log("ERR: Update line in file {0} has an incorrect backlink to the initiative: {1}".format(file.path, line));
 						}
@@ -81,14 +81,14 @@ export default class CustomerTracker extends Plugin {
 					}
 
 				}
-				this.customers.addCustomer(customer);
+				this.tracker.addCustomer(customer);
 			}
 		}
 	}
 
 
 	async generateCustomers(): Promise<void> {
-		this.customers = new Customers();
+		this.tracker = new CustomerTracker();
 		//We need to do this in two steps to ensure we have all the customer initiatives
 		//before we start processing the updates from the people's notes
 		await this.generateCustomerInitiatives();
@@ -100,8 +100,8 @@ export default class CustomerTracker extends Plugin {
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Customer tracker', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			await this.generateCustomers();
-			if (this.customers) {
-				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.customers).open();
+			if (this.tracker) {
+				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.tracker).open();
 			}
 
 		});
@@ -112,7 +112,7 @@ export default class CustomerTracker extends Plugin {
 			id: 'open-customer-tracker-modal-window',
 			name: 'Open filtering window',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.customers).open();
+				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.tracker).open();
 			}
 		})
 
@@ -120,7 +120,7 @@ export default class CustomerTracker extends Plugin {
 			id: 'add-update-header-current-note',
 			name: 'Add update header to current note',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				new SelectInitiativeModal(this.app, this.customers, editor).open();
+				new SelectInitiativeModal(this.app, this.tracker, editor).open();
 			}
 		})
 
@@ -128,7 +128,7 @@ export default class CustomerTracker extends Plugin {
 			id: 'add-customer-tracking-summary-current-note',
 			name: 'Add customer tracking summary to current note',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection(this.customers.renderMD());
+				editor.replaceSelection(this.tracker.renderMD());
 			}
 		});
 
@@ -146,7 +146,7 @@ export default class CustomerTracker extends Plugin {
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				const file = this.app.workspace.getActiveFile();
 				if (file && file.path.contains(this.settings.peopleBaseFolder)) {
-					editor.replaceSelection(this.customers.renderInitiativesToFolloup(file.basename));
+					editor.replaceSelection(this.tracker.renderInitiativesToFolloup(file.basename));
 				} else {
 					new Notice("Can only do this in a Person note under {0}".format(this.settings.peopleBaseFolder));
 				}
@@ -197,7 +197,7 @@ export default class CustomerTracker extends Plugin {
 
 		this.registerView(
 			INITIATIVEUPDATES_VIEW_TYPE,
-			(leaf) => new InitiativeUpdatesView(leaf, this.app, this.customers, this.settings)
+			(leaf) => new InitiativeUpdatesView(leaf, this.app, this.tracker, this.settings)
 		  );
 	}
 
@@ -215,16 +215,16 @@ export default class CustomerTracker extends Plugin {
 }
 
 class SampleModal extends Modal {
-	customers: Customers;
-	constructor(app: App, customers: Customers) {
+	tracker: CustomerTracker;
+	constructor(app: App, tracker: CustomerTracker) {
 		super(app);
-		this.customers = customers;
+		this.tracker = tracker;
 	}
 
 	onOpen() {
 		const { contentEl } = this;
 		//contentEl.setText('Woah!');
-		contentEl.createDiv().innerHTML = this.customers.renderHTML();
+		contentEl.createDiv().innerHTML = this.tracker.renderHTML();
 	}
 
 	onClose() {

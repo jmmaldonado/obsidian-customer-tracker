@@ -1,5 +1,5 @@
 import { App, ItemView, MarkdownRenderer, MarkdownView, Notice, Vault, WorkspaceLeaf } from "obsidian";
-import { Customers } from "./Customers";
+import { CustomerTracker } from "./Customers";
 import { CustomerTrackerSettings } from "./Settings";
 import { getLinesOfHeader } from "./Utils";
 
@@ -8,13 +8,13 @@ export const INITIATIVEUPDATES_VIEW_TYPE = "initiative-updates-view";
 export class InitiativeUpdatesView extends ItemView {
 
     app: App;
-    customers: Customers;
+    tracker: CustomerTracker;
     settings: CustomerTrackerSettings;
 
-    constructor(leaf: WorkspaceLeaf, app: App, customers: Customers, settings: CustomerTrackerSettings) {
+    constructor(leaf: WorkspaceLeaf, app: App, tracker: CustomerTracker, settings: CustomerTrackerSettings) {
         super(leaf);
         this.app = app;
-        this.customers = customers;
+        this.tracker = tracker;
         this.settings = settings;
     }
 
@@ -78,7 +78,7 @@ export class InitiativeUpdatesView extends ItemView {
             return;
         }
 
-        let initiative = this.customers.getCustomer(customerName)?.getInitiative(initiativeName);
+        let initiative = this.tracker.getCustomer(customerName)?.getInitiative(initiativeName);
         let updates: string = ""
         if (initiative) {
             initiative.updates.sort((a,b) => {return b.date.getTime() - a.date.getTime(); });
