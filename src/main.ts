@@ -5,7 +5,7 @@ import { Customer } from "src/Customer";
 import { CustomerInitiatives } from 'src/CustomerInitiatives'
 import { CustomerInitiative } from "src/CustomerInitiative";
 import { FilterModal } from './views/FilterModal';
-import { CustomerUpdate } from './CustomerUpdates';
+import { CustomerUpdate } from './CustomerUpdate';
 import { SelectInitiativeModal } from './views/SelectInitiativeModal';
 import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './views/InitiativeUpdatesView';
 import { getLinesOfHeader } from './Utils';

@@ -1,6 +1,6 @@
 import { CustomerInitiative } from "src/CustomerInitiative";
 import { Customer } from "./Customer";
-import { CustomerUpdate } from "./CustomerUpdates";
+import { CustomerUpdate } from "./CustomerUpdate";
 import { FilterSettings } from "./FilterSettings";
 
 export class CustomerTracker {

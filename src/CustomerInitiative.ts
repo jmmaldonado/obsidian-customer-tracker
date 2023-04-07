@@ -1,4 +1,4 @@
-import { CustomerUpdate } from "src/CustomerUpdates";
+import { CustomerUpdate } from "src/CustomerUpdate";
 
 
 export class CustomerInitiative {
