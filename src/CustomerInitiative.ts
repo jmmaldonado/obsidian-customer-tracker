@@ -21,6 +21,7 @@ export class CustomerInitiative {
         this.firstUpdate = new Date("9999-12-31");
         this.lastUpdate = new Date("1900-01-01");
         this.status = "";
+        this.raw = "";
     }
 
     public addUpdateFromLine(updateLine: string) {
