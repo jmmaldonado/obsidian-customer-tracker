@@ -3,13 +3,15 @@ import { Customer } from "./Customer";
 import { CustomerInitiatives } from "./CustomerInitiatives";
 import { CustomerUpdate } from "./CustomerUpdate";
 import { FilterSettings } from "./FilterSettings";
+import { PeopleUpdates } from "./PeopleUpdates";
 
 export class CustomerTracker {
     customers: Map<string, Customer>;
-    peopleUpdates: Map<string, CustomerInitiatives>;
+    peopleUpdates: PeopleUpdates;
 
     public constructor() {
         this.customers = new Map<string, Customer>();
+        this.peopleUpdates = new PeopleUpdates();
     }
 
     public containsCustomer(customer: string): boolean {
@@ -34,6 +36,7 @@ export class CustomerTracker {
     }
 
     public addUpdate(update: CustomerUpdate) {
+        this.peopleUpdates.addUpdate(update);
         let customer = this.getCustomer(update.customer);
         if (customer) {
             let initiatives = customer.getInitiativesFromArea(update.area);
