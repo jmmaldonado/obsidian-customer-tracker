@@ -1,10 +1,12 @@
 import { CustomerInitiative } from "src/CustomerInitiative";
 import { Customer } from "./Customer";
+import { CustomerInitiatives } from "./CustomerInitiatives";
 import { CustomerUpdate } from "./CustomerUpdate";
 import { FilterSettings } from "./FilterSettings";
 
 export class CustomerTracker {
     customers: Map<string, Customer>;
+    peopleUpdates: Map<string, CustomerInitiatives>;
 
     public constructor() {
         this.customers = new Map<string, Customer>();
