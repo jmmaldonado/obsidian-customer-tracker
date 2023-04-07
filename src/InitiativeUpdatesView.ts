@@ -1,5 +1,5 @@
 import { App, ItemView, MarkdownRenderer, MarkdownView, Notice, Vault, WorkspaceLeaf } from "obsidian";
-import { CustomerTracker } from "./Customers";
+import { CustomerTracker } from "./CustomerTracker";
 import { CustomerTrackerSettings } from "./Settings";
 import { getLinesOfHeader } from "./Utils";
 

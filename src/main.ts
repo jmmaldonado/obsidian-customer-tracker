@@ -1,7 +1,9 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS } from './Settings';
-import { CustomerTracker, Customer } from 'src/Customers'
-import { CustomerInitiatives, CustomerInitiative } from 'src/CustomerInitiatives'
+import { CustomerTracker } from 'src/CustomerTracker'
+import { Customer } from "src/Customer";
+import { CustomerInitiatives } from 'src/CustomerInitiatives'
+import { CustomerInitiative } from "src/CustomerInitiative";
 import { FilterModal } from './FilterModal';
 import { CustomerUpdate } from './CustomerUpdates';
 import { SelectInitiativeModal } from './SelectInitiativeModal';

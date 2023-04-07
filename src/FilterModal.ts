@@ -1,5 +1,5 @@
 import { App, Editor, Modal, Setting } from "obsidian";
-import { CustomerTracker } from "./Customers";
+import { CustomerTracker } from "./CustomerTracker";
 import { FilterSettings } from "./FilterSettings";
 
 export class FilterModal extends Modal {

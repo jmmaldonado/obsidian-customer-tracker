@@ -1,7 +1,7 @@
 import { it } from "node:test";
 import { App, Editor, FuzzyMatch, FuzzySuggestModal } from "obsidian";
-import { CustomerInitiative } from "./CustomerInitiatives";
-import { CustomerTracker } from "./Customers";
+import { CustomerInitiative } from "./CustomerInitiative";
+import { CustomerTracker } from "./CustomerTracker";
 
 export class SelectInitiativeModal extends FuzzySuggestModal<CustomerInitiative> {
     private editor: Editor;
