@@ -22,7 +22,7 @@ export default class CustomerTracking extends Plugin {
 		let updateRegex = new RegExp(this.settings.peopleUpdateRegex);
 		const files = this.app.vault.getMarkdownFiles()
 		for (const file of files) {
-			if (file.path.contains(this.settings.peopleBaseFolder)) {
+			if (!file.basename.startsWith("+") && file.path.contains(this.settings.peopleBaseFolder)) {
 				let person = file.basename;
 				let fileContent = await vault.cachedRead(file);
 				let lines = fileContent.split("\n").filter(line => line.includes("#"));
@@ -57,7 +57,7 @@ export default class CustomerTracking extends Plugin {
 		let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
 		const files = this.app.vault.getMarkdownFiles()
 		for (const file of files) {
-			if (file.path.contains(this.settings.customersBaseFolder)) {
+			if (!file.basename.startsWith("+") && file.path.contains(this.settings.customersBaseFolder)) {
 				let customer: Customer = new Customer(file.basename, file.path);
 				customer.addArea("");
 				let fileContent = await vault.cachedRead(file);
