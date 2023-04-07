@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS } from './Settings';
 import { CustomerTracker } from 'src/CustomerTracker'
 import { Customer } from "src/Customer";
@@ -9,6 +9,7 @@ import { CustomerUpdate } from './CustomerUpdate';
 import { SelectInitiativeModal } from './views/SelectInitiativeModal';
 import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './views/InitiativeUpdatesView';
 import { getLinesOfHeader } from './Utils';
+import { StatisticsModal } from './views/StatisticsModal';
 
 
 export default class CustomerTracking extends Plugin {
@@ -154,6 +155,15 @@ export default class CustomerTracking extends Plugin {
 				}
 			}
 		});
+
+		this.addCommand({
+			id: 'show-statistics-modal',
+			name: 'Show statistics',
+			callback: async () => {
+				await this.generateCustomers();
+				new StatisticsModal(this.app, this.tracker).open();
+			}
+		});
 	}
 
 	registerContextMenu() {
@@ -215,26 +225,5 @@ export default class CustomerTracking extends Plugin {
 		await this.saveData(this.settings);
 	}
 }
-
-class SampleModal extends Modal {
-	tracker: CustomerTracker;
-	constructor(app: App, tracker: CustomerTracker) {
-		super(app);
-		this.tracker = tracker;
-	}
-
-	onOpen() {
-		const { contentEl } = this;
-		//contentEl.setText('Woah!');
-		contentEl.createDiv().innerHTML = this.tracker.renderHTML();
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
-
-
 
 
