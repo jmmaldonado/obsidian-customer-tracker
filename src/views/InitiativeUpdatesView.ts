@@ -1,7 +1,7 @@
 import { App, ItemView, MarkdownRenderer, MarkdownView, Notice, Vault, WorkspaceLeaf } from "obsidian";
-import { CustomerTracker } from "./CustomerTracker";
-import { CustomerTrackerSettings } from "./Settings";
-import { getLinesOfHeader } from "./Utils";
+import { CustomerTracker } from "../CustomerTracker";
+import { CustomerTrackerSettings } from "../Settings";
+import { getLinesOfHeader } from "../Utils";
 
 export const INITIATIVEUPDATES_VIEW_TYPE = "initiative-updates-view";
 

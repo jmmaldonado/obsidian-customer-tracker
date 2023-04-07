@@ -4,10 +4,10 @@ import { CustomerTracker } from 'src/CustomerTracker'
 import { Customer } from "src/Customer";
 import { CustomerInitiatives } from 'src/CustomerInitiatives'
 import { CustomerInitiative } from "src/CustomerInitiative";
-import { FilterModal } from './FilterModal';
+import { FilterModal } from './views/FilterModal';
 import { CustomerUpdate } from './CustomerUpdates';
-import { SelectInitiativeModal } from './SelectInitiativeModal';
-import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './InitiativeUpdatesView';
+import { SelectInitiativeModal } from './views/SelectInitiativeModal';
+import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './views/InitiativeUpdatesView';
 import { getLinesOfHeader } from './Utils';
 
 
