@@ -8,13 +8,15 @@ export class PeopleUpdates {
         this.updates = new Map<string, CustomerInitiatives>();
     }
 
-    public addUpdate(update: CustomerUpdate) {
+
+
+    public addUpdate(update: CustomerUpdate, initiativeStatus: string) {
         let initiatives = this.updates.get(update.person);
         if (initiatives) {
-            initiatives.addUpdate(update);
+            initiatives.addUpdate(update, initiativeStatus);
         } else {
             initiatives = new CustomerInitiatives(update.area, update.customer);
-            initiatives.addUpdate(update);
+            initiatives.addUpdate(update, initiativeStatus);
             this.updates.set(update.person, initiatives);
         }
     }

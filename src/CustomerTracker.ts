@@ -36,7 +36,6 @@ export class CustomerTracker {
     }
 
     public addUpdate(update: CustomerUpdate) {
-        this.peopleUpdates.addUpdate(update);
         let customer = this.getCustomer(update.customer);
         if (customer) {
             let initiatives = customer.getInitiativesFromArea(update.area);
@@ -44,6 +43,7 @@ export class CustomerTracker {
                 let initiative = initiatives.getInitiative(update.initiative);
                 if (initiative) {
                     initiative.addUpdate(update);
+                    this.peopleUpdates.addUpdate(update, initiative.status);
                 } else {
                     console.log("ERR: Initiative ({0}) not found in customers object".format(update.initiative));
                     console.dir(initiatives);

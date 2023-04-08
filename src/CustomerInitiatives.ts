@@ -31,12 +31,13 @@ export class CustomerInitiatives {
         return this.initiatives.get(name);
     }
 
-    public addUpdate(update: CustomerUpdate) {
+    public addUpdate(update: CustomerUpdate, initiativeStatus: string) {
         let initiative = this.getInitiative(update.initiative);
         if (initiative) {
             initiative.addUpdate(update);
         } else {
             initiative = new CustomerInitiative(update.initiative, update.area, update.customer);
+            initiative.status = initiativeStatus;
             initiative.addUpdate(update);
             this.setInitiative(update.initiative, initiative);
         }
