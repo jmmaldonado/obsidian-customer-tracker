@@ -12,7 +12,8 @@ export class StatisticsModal extends Modal {
 	onOpen() {
 		const { contentEl } = this;
 		//contentEl.setText('Woah!');
-		contentEl.createDiv().innerHTML = this.renderStatisticsHTMLTable();
+		//contentEl.createDiv().innerHTML = 
+		this.renderStatisticsHTMLTable(contentEl);
 	}
 
 	onClose() {
@@ -20,30 +21,29 @@ export class StatisticsModal extends Modal {
 		contentEl.empty();
 	}
 
-	private renderStatisticsHTMLTable() : string {
-		let html = "";
-		html += "<table><tr>";
-		html += "<td width='200'>{0}</td>".format("Person");
-		html += "<td>{0}</td>".format("Customers");
-		html += "<td>{0}</td>".format("Initiatives");
-		html += "<td>{0}</td>".format("In progress");
-		html += "<td>{0}</td>".format("Won");
-		html += "<td>{0}</td>".format("Lost");
-		html += "<td>{0}</td>".format("Other");
-		html += "</tr>"
+	private renderStatisticsHTMLTable(el: HTMLElement) {
+
+		const table = el.createEl("table");
+		const body = table.createEl("tbody");
+		const row = body.createEl("tr");
+		row.createEl("td", { text:"Person" });
+		row.createEl("td", { text:"Customers" });
+		row.createEl("td", { text:"Initiatives" });
+		row.createEl("td", { text:"WIP" });
+		row.createEl("td", { text:"Won" });
+		row.createEl("td", { text:"Lost" });
+		row.createEl("td", { text:"Other" });
+	
 		for (const [person, initiatives] of this.tracker.peopleUpdates.updates) {
-			let initiativesByStatus = this.tracker.peopleUpdates.numberOfInitiativesByStatus(person);
-			html += "<tr>";
-			html += "<td>{0}</td>".format(person);
-			html += "<td>{0}</td>".format(this.tracker.peopleUpdates.numberOfCustomers(person).toString());
-			html += "<td>{0}</td>".format(this.tracker.peopleUpdates.numberOfInitatives(person).toString());
-			html += "<td>{0}</td>".format(initiativesByStatus[0].toString());
-			html += "<td>{0}</td>".format(initiativesByStatus[1].toString());
-			html += "<td>{0}</td>".format(initiativesByStatus[2].toString());
-			html += "<td>{0}</td>".format(initiativesByStatus[3].toString());
-			html += "</tr>"
+			let initiativesByStatus = this.tracker.peopleUpdates.numberOfInitiativesByStatus(person);	
+		  	const row = body.createEl("tr");
+  			row.createEl("td", { text: person });
+			row.createEl("td", { text: this.tracker.peopleUpdates.numberOfCustomers(person).toString() });
+			row.createEl("td", { text: this.tracker.peopleUpdates.numberOfInitatives(person).toString() });
+			row.createEl("td", { text: initiativesByStatus[0].toString() });
+			row.createEl("td", { text: initiativesByStatus[1].toString() });
+			row.createEl("td", { text: initiativesByStatus[2].toString() });
+			row.createEl("td", { text: initiativesByStatus[3].toString() });
 		}
-		html += "</table>"
-		return html;
 	}
 }
