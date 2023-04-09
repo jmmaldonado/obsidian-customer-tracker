@@ -31,8 +31,6 @@ export class InitiativeUpdatesView extends ItemView {
         container.empty();
         container.createEl("h2", { text: header });
         let spanEl = container.createSpan();
-        /*let mpv = new MarkdownPreviewView(spanEl);
-        mpv.set(text, false);*/
         await MarkdownRenderer.renderMarkdown(text, spanEl, "/", this.leaf.view);
     }
 
