@@ -63,52 +63,6 @@ export class CustomerTracker {
         }
     }
 
-    public renderHTML(): string {
-        if (this.customers.size == 0)
-            return "No customer updates";
-
-        let html = ""
-        html += "<table>"
-        html += "  <tr>"
-        html += "    <td>Customer</td>"
-        html += "    <td>Area</td>"
-        html += "    <td>Initiative</td>"
-        html += "    <td>Updates</td>"
-        html += "    <td>Days ago</td>"
-        html += "    <td>First seen</td>"
-        html += "    <td>People</td>"
-        html += "  </tr>"
-
-        for (let [, customer] of this.customers) {
-            for (let [, area] of customer.areas) {
-                for (let [, initiative] of area.initiatives) {
-                    let people: string[] = [];
-                    for (let update of initiative.updates) {
-                        if(!people.includes(update.person))
-                            people.push(update.person);
-                    }
-                    html += "  <tr>"
-                    html += "    <td>" + initiative.customer + "</td>"
-                    html += "    <td>" + initiative.area + "</td>"
-                    html += "    <td>" + initiative.name + "</td>"
-                    html += "    <td>" + initiative.numUpdates + "</td>"
-                    html += "    <td>" + Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)) + "</td>"
-                    html += "    <td>" + initiative.firstUpdate + "</td>"
-                    html += "    <td>"
-                        for (let person of people) {
-                            html += person + "</br>"
-                        }
-                    html += "    </td>"
-
-                    html += "  </tr>"
-                }
-            }
-        }
-
-        html += "</table>"
-        return html;
-    }
-
 
     public renderMD(filterSettings?: FilterSettings): string {
         if (this.customers.size == 0)
