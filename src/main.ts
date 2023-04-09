@@ -1,17 +1,19 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS } from './Settings';
-import { Customers, Customer } from 'src/Customers'
-import { CustomerInitiatives, CustomerInitiative } from 'src/CustomerInitiatives'
-import { FilterModal } from './FilterModal';
-import { CustomerUpdate } from './CustomerUpdates';
-import { SelectInitiativeModal } from './SelectInitiativeModal';
-import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './InitiativeUpdatesView';
-import { getLinesOfHeader } from './Utils';
+import { CustomerTracker } from 'src/CustomerTracker'
+import { Customer } from "src/Customer";
+import { CustomerInitiative } from "src/CustomerInitiative";
+import { FilterModal } from './views/FilterModal';
+import { CustomerUpdate } from './CustomerUpdate';
+import { SelectInitiativeModal } from './views/SelectInitiativeModal';
+import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './views/InitiativeUpdatesView';
+import { registerQueryCodeBlock } from './views/QueryCodeBlock';
+import { StatisticsView, STATISTICS_VIEW_TYPE } from './views/StatisticsView';
 
 
-export default class CustomerTracker extends Plugin {
+export default class CustomerTracking extends Plugin {
 	settings: CustomerTrackerSettings;
-	customers: Customers;
+	tracker: CustomerTracker;
 
 
 	async generateUpdatesFromPeople(): Promise<void> {
@@ -19,7 +21,7 @@ export default class CustomerTracker extends Plugin {
 		let updateRegex = new RegExp(this.settings.peopleUpdateRegex);
 		const files = this.app.vault.getMarkdownFiles()
 		for (const file of files) {
-			if (file.path.contains(this.settings.peopleBaseFolder)) {
+			if (!file.basename.startsWith("+") && file.path.contains(this.settings.peopleBaseFolder)) {
 				let person = file.basename;
 				let fileContent = await vault.cachedRead(file);
 				let lines = fileContent.split("\n").filter(line => line.includes("#"));
@@ -37,11 +39,10 @@ export default class CustomerTracker extends Plugin {
 							update.person = person;
 							update.raw = line;
 							update.file = file;
-							this.customers.addUpdate(update);
+							this.tracker.addUpdate(update);
 						} else {
 							console.log("ERR: Update line in file {0} has an incorrect backlink to the initiative: {1}".format(file.path, line));
 						}
-						
 					}
 				}
 			}
@@ -54,7 +55,7 @@ export default class CustomerTracker extends Plugin {
 		let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
 		const files = this.app.vault.getMarkdownFiles()
 		for (const file of files) {
-			if (file.path.contains(this.settings.customersBaseFolder)) {
+			if (!file.basename.startsWith("+") && file.path.contains(this.settings.customersBaseFolder)) {
 				let customer: Customer = new Customer(file.basename, file.path);
 				customer.addArea("");
 				let fileContent = await vault.cachedRead(file);
@@ -68,27 +69,27 @@ export default class CustomerTracker extends Plugin {
 						
 						//Try to get the status
 						initiative.status = "";
-						if (i+1 < lines.length) {
-							let nextLine = lines[i+1];
+						if (i + 1 < lines.length) {
+							let nextLine = lines[i + 1];
 							let statusRegex = new RegExp(this.settings.initiativeStatusRegex);
 							let statusLine = nextLine.match(statusRegex);
 							if (statusLine) {
 								initiative.status = statusLine[1];
-							} 
+							}
 						}
 
 						customer.addInitiativeToArea("", initiative);
 					}
 
 				}
-				this.customers.addCustomer(customer);
+				this.tracker.addCustomer(customer);
 			}
 		}
 	}
 
 
 	async generateCustomers(): Promise<void> {
-		this.customers = new Customers();
+		this.tracker = new CustomerTracker();
 		//We need to do this in two steps to ensure we have all the customer initiatives
 		//before we start processing the updates from the people's notes
 		await this.generateCustomerInitiatives();
@@ -100,8 +101,8 @@ export default class CustomerTracker extends Plugin {
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Customer tracker', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			await this.generateCustomers();
-			if (this.customers) {
-				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.customers).open();
+			if (this.tracker) {
+				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.tracker).open();
 			}
 
 		});
@@ -112,7 +113,7 @@ export default class CustomerTracker extends Plugin {
 			id: 'open-customer-tracker-modal-window',
 			name: 'Open filtering window',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.customers).open();
+				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.tracker).open();
 			}
 		})
 
@@ -120,7 +121,7 @@ export default class CustomerTracker extends Plugin {
 			id: 'add-update-header-current-note',
 			name: 'Add update header to current note',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				new SelectInitiativeModal(this.app, this.customers, editor).open();
+				new SelectInitiativeModal(this.app, this.tracker, editor).open();
 			}
 		})
 
@@ -128,7 +129,7 @@ export default class CustomerTracker extends Plugin {
 			id: 'add-customer-tracking-summary-current-note',
 			name: 'Add customer tracking summary to current note',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection(this.customers.renderMD());
+				editor.replaceSelection(this.tracker.renderMD());
 			}
 		});
 
@@ -146,10 +147,34 @@ export default class CustomerTracker extends Plugin {
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				const file = this.app.workspace.getActiveFile();
 				if (file && file.path.contains(this.settings.peopleBaseFolder)) {
-					editor.replaceSelection(this.customers.renderInitiativesToFolloup(file.basename));
+					editor.replaceSelection(this.tracker.renderInitiativesToFolloup(file.basename));
 				} else {
 					new Notice("Can only do this in a Person note under {0}".format(this.settings.peopleBaseFolder));
 				}
+			}
+		});
+
+		this.addCommand({
+			id: 'show-statistics-modal',
+			name: 'Show statistics',
+			callback: async () => {
+				this.app.workspace.detachLeavesOfType(STATISTICS_VIEW_TYPE);
+
+				try {
+					this.registerView(
+						STATISTICS_VIEW_TYPE,
+						(leaf) => new StatisticsView(leaf, this.app, this.tracker.generateStatisticsMD())
+					);
+				} catch (e: any) { }
+
+				await this.app.workspace.getRightLeaf(false).setViewState({
+					type: STATISTICS_VIEW_TYPE,
+					active: true,
+				});
+
+				this.app.workspace.revealLeaf(
+					this.app.workspace.getLeavesOfType(STATISTICS_VIEW_TYPE)[0]
+				);
 			}
 		});
 	}
@@ -157,12 +182,11 @@ export default class CustomerTracker extends Plugin {
 	registerContextMenu() {
 
 		this.app.workspace.on("editor-menu", (menu, editor, view) => {
-			menu.addItem((item) => { 
+			menu.addItem((item) => {
 				item
 					.setTitle("Show initiative updates")
 					.setIcon("document")
-					.onClick( () => {
-						//this.showUpdatesForSelectedInitiative();
+					.onClick(() => {
 						this.showUpdatesForInitiativeAtCurrentLine();
 					});
 			});
@@ -174,35 +198,39 @@ export default class CustomerTracker extends Plugin {
 	public async showUpdatesForInitiativeAtCurrentLine() {
 		//Only allows one InitiativeUpdates view
 		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
-	
+
 		await this.app.workspace.getRightLeaf(false).setViewState({
-		  type: INITIATIVEUPDATES_VIEW_TYPE,
-		  active: true,
+			type: INITIATIVEUPDATES_VIEW_TYPE,
+			active: true,
 		});
 
 		this.app.workspace.revealLeaf(
-		  this.app.workspace.getLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE)[0]
+			this.app.workspace.getLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE)[0]
 		);
-	  }
+	}
 
 
-	async onload() {
-		await this.loadSettings();
-		await this.generateCustomers();
-		this.registerCommands();
-		this.registerContextMenu();
+	load() {
+		this.app.workspace.onLayoutReady(async () => {
+			await this.loadSettings();
+			await this.generateCustomers();
+			this.registerCommands();
+			this.registerContextMenu();
+			this.registerMarkdownCodeBlockProcessor("customerTracking", (source, el, ctx) => registerQueryCodeBlock(source, el, ctx, this.tracker));
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new CustomerTrackerSettingsTab(this.app, this));
+			// This adds a settings tab so the user can configure various aspects of the plugin
+			this.addSettingTab(new CustomerTrackerSettingsTab(this.app, this));
 
-		this.registerView(
-			INITIATIVEUPDATES_VIEW_TYPE,
-			(leaf) => new InitiativeUpdatesView(leaf, this.app, this.customers, this.settings)
-		  );
+			this.registerView(
+				INITIATIVEUPDATES_VIEW_TYPE,
+				(leaf) => new InitiativeUpdatesView(leaf, this.app, this.tracker, this.settings)
+			);
+		})
 	}
 
 	onunload() {
 		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
+		this.app.workspace.detachLeavesOfType(STATISTICS_VIEW_TYPE);
 	}
 
 	async loadSettings() {
@@ -213,26 +241,5 @@ export default class CustomerTracker extends Plugin {
 		await this.saveData(this.settings);
 	}
 }
-
-class SampleModal extends Modal {
-	customers: Customers;
-	constructor(app: App, customers: Customers) {
-		super(app);
-		this.customers = customers;
-	}
-
-	onOpen() {
-		const { contentEl } = this;
-		//contentEl.setText('Woah!');
-		contentEl.createDiv().innerHTML = this.customers.renderHTML();
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
-
-
 
 

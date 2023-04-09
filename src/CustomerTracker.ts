@@ -1,15 +1,20 @@
-import { CustomerInitiatives, CustomerInitiative } from "src/CustomerInitiatives"
-import { CustomerUpdate } from "./CustomerUpdates";
+import { CustomerInitiative } from "src/CustomerInitiative";
+import { Customer } from "./Customer";
+import { CustomerInitiatives } from "./CustomerInitiatives";
+import { CustomerUpdate } from "./CustomerUpdate";
 import { FilterSettings } from "./FilterSettings";
+import { PeopleUpdates } from "./PeopleUpdates";
 
-export class Customers {
+export class CustomerTracker {
     customers: Map<string, Customer>;
+    peopleUpdates: PeopleUpdates;
 
     public constructor() {
         this.customers = new Map<string, Customer>();
+        this.peopleUpdates = new PeopleUpdates();
     }
 
-    public contains(customer: string): boolean {
+    public containsCustomer(customer: string): boolean {
         return this.customers.has(customer);
     }
 
@@ -38,6 +43,7 @@ export class Customers {
                 let initiative = initiatives.getInitiative(update.initiative);
                 if (initiative) {
                     initiative.addUpdate(update);
+                    this.peopleUpdates.addUpdate(update, initiative.status);
                 } else {
                     console.log("ERR: Initiative ({0}) not found in customers object".format(update.initiative));
                     console.dir(initiatives);
@@ -57,50 +63,24 @@ export class Customers {
         }
     }
 
-    public renderHTML(): string {
-        if (this.customers.size == 0)
-            return "No customer updates";
+    public generateStatisticsMD(): string {
+		let md = "";
+        md += "| Person | Customer | Initiatives | WIP | Won | Lost | Other |\n"
+        md += "|--------|----------|-------------|-----|-----|------|-------|\n"
 
-        let html = ""
-        html += "<table>"
-        html += "  <tr>"
-        html += "    <td>Customer</td>"
-        html += "    <td>Area</td>"
-        html += "    <td>Initiative</td>"
-        html += "    <td>Updates</td>"
-        html += "    <td>Days ago</td>"
-        html += "    <td>First seen</td>"
-        html += "    <td>People</td>"
-        html += "  </tr>"
+		for (const [person, initiatives] of this.peopleUpdates.updates) {
+			let initiativesByStatus = this.peopleUpdates.numberOfInitiativesByStatus(person);	
+			md += "| {0} |".format(person);
+			md += "  {0} |".format(this.peopleUpdates.numberOfCustomers(person).toString());
+			md += "  {0} |".format(this.peopleUpdates.numberOfInitatives(person).toString());
+			md += "  {0} |".format(initiativesByStatus[0].toString());
+			md += "  {0} |".format(initiativesByStatus[1].toString());
+			md += "  {0} |".format(initiativesByStatus[2].toString());
+			md += "  {0} |".format(initiativesByStatus[3].toString());
+			md += "\n";
+		}
 
-        for (let [, customer] of this.customers) {
-            for (let [, area] of customer.areas) {
-                for (let [, initiative] of area.initiatives) {
-                    let people: string[] = [];
-                    for (let update of initiative.updates) {
-                        if(!people.includes(update.person))
-                            people.push(update.person);
-                    }
-                    html += "  <tr>"
-                    html += "    <td>" + initiative.customer + "</td>"
-                    html += "    <td>" + initiative.area + "</td>"
-                    html += "    <td>" + initiative.name + "</td>"
-                    html += "    <td>" + initiative.numUpdates + "</td>"
-                    html += "    <td>" + Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)) + "</td>"
-                    html += "    <td>" + initiative.firstUpdate + "</td>"
-                    html += "    <td>"
-                        for (let person of people) {
-                            html += person + "</br>"
-                        }
-                    html += "    </td>"
-
-                    html += "  </tr>"
-                }
-            }
-        }
-
-        html += "</table>"
-        return html;
+		return md;
     }
 
 
@@ -274,54 +254,4 @@ export class Customers {
     }
 }
 
-export class Customer {
-    name: string;
-    path: string;
-    areas: Map<string, CustomerInitiatives>;
 
-    public constructor(name: string, path: string) {
-        this.name = name;
-        this.path = path;
-        this.areas = new Map();
-    }
-
-    public containsArea(areaName: string): boolean {
-        return this.areas.has(areaName);
-    }
-
-    public addArea(areaName: string) {
-        if (!this.containsArea(areaName))  {
-            let initiatives = new CustomerInitiatives(areaName, this.name);
-            this.areas.set(areaName, initiatives);
-        }
-    }
-
-    public getInitiativesFromArea(area: string): CustomerInitiatives | undefined | null {
-        if (!this.containsArea(area)) 
-            return null;
-        return this.areas.get(area);
-    }
-
-    public addInitiativeToArea(area: string, initiative: CustomerInitiative | undefined) {
-        if (initiative === undefined)
-            return;
-
-        let areaInitiatives = this.getInitiativesFromArea(area);
-        if (areaInitiatives == null)
-            areaInitiatives = new CustomerInitiatives(area, this.name);
-        areaInitiatives.setInitiative(initiative.name, initiative);    
-        this.areas.set(area, areaInitiatives);
-    }
-
-    public getInitiative(initiativeName: string): CustomerInitiative | null {
-        let result = null;
-        for (let area of this.areas.values()) {
-            for (let initiative of area.initiatives.values()) {
-                if (initiative.name == initiativeName) {
-                    result = initiative;
-                }
-            }
-        }
-        return result;
-    }
-}

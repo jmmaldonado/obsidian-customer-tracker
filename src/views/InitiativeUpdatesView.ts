@@ -1,20 +1,20 @@
 import { App, ItemView, MarkdownRenderer, MarkdownView, Notice, Vault, WorkspaceLeaf } from "obsidian";
-import { Customers } from "./Customers";
-import { CustomerTrackerSettings } from "./Settings";
-import { getLinesOfHeader } from "./Utils";
+import { CustomerTracker } from "../CustomerTracker";
+import { CustomerTrackerSettings } from "../Settings";
+import { getLinesOfHeader } from "../Utils";
 
 export const INITIATIVEUPDATES_VIEW_TYPE = "initiative-updates-view";
 
 export class InitiativeUpdatesView extends ItemView {
 
     app: App;
-    customers: Customers;
+    tracker: CustomerTracker;
     settings: CustomerTrackerSettings;
 
-    constructor(leaf: WorkspaceLeaf, app: App, customers: Customers, settings: CustomerTrackerSettings) {
+    constructor(leaf: WorkspaceLeaf, app: App, tracker: CustomerTracker, settings: CustomerTrackerSettings) {
         super(leaf);
         this.app = app;
-        this.customers = customers;
+        this.tracker = tracker;
         this.settings = settings;
     }
 
@@ -31,8 +31,6 @@ export class InitiativeUpdatesView extends ItemView {
         container.empty();
         container.createEl("h2", { text: header });
         let spanEl = container.createSpan();
-        /*let mpv = new MarkdownPreviewView(spanEl);
-        mpv.set(text, false);*/
         await MarkdownRenderer.renderMarkdown(text, spanEl, "/", this.leaf.view);
     }
 
@@ -49,6 +47,9 @@ export class InitiativeUpdatesView extends ItemView {
         let initiativeName = "";
         const file = this.app.workspace.getActiveFile();
         let lineAtCaret = editor.getLine(editor.getCursor().line).trim();
+
+        if (lineAtCaret.length == 0)
+            return;
 
         //If the current file is under the CustomerBase folder, the line should match Customer Initiative Regex defined in settings
         //Since we have the customer name (file.basename) we can just gather the initiative and move on to finding all the updates
@@ -78,7 +79,7 @@ export class InitiativeUpdatesView extends ItemView {
             return;
         }
 
-        let initiative = this.customers.getCustomer(customerName)?.getInitiative(initiativeName);
+        let initiative = this.tracker.getCustomer(customerName)?.getInitiative(initiativeName);
         let updates: string = ""
         if (initiative) {
             initiative.updates.sort((a,b) => {return b.date.getTime() - a.date.getTime(); });
