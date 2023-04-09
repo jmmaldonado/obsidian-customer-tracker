@@ -2,15 +2,13 @@ import { Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting } from 
 import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS } from './Settings';
 import { CustomerTracker } from 'src/CustomerTracker'
 import { Customer } from "src/Customer";
-import { CustomerInitiatives } from 'src/CustomerInitiatives'
 import { CustomerInitiative } from "src/CustomerInitiative";
 import { FilterModal } from './views/FilterModal';
 import { CustomerUpdate } from './CustomerUpdate';
 import { SelectInitiativeModal } from './views/SelectInitiativeModal';
 import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './views/InitiativeUpdatesView';
-import { getLinesOfHeader } from './Utils';
-import { StatisticsModal } from './views/StatisticsModal';
 import { registerQueryCodeBlock } from './views/QueryCodeBlock';
+import { StatisticsView, STATISTICS_VIEW_TYPE } from './views/StatisticsView';
 
 
 export default class CustomerTracking extends Plugin {
@@ -45,7 +43,6 @@ export default class CustomerTracking extends Plugin {
 						} else {
 							console.log("ERR: Update line in file {0} has an incorrect backlink to the initiative: {1}".format(file.path, line));
 						}
-						
 					}
 				}
 			}
@@ -72,13 +69,13 @@ export default class CustomerTracking extends Plugin {
 						
 						//Try to get the status
 						initiative.status = "";
-						if (i+1 < lines.length) {
-							let nextLine = lines[i+1];
+						if (i + 1 < lines.length) {
+							let nextLine = lines[i + 1];
 							let statusRegex = new RegExp(this.settings.initiativeStatusRegex);
 							let statusLine = nextLine.match(statusRegex);
 							if (statusLine) {
 								initiative.status = statusLine[1];
-							} 
+							}
 						}
 
 						customer.addInitiativeToArea("", initiative);
@@ -161,8 +158,23 @@ export default class CustomerTracking extends Plugin {
 			id: 'show-statistics-modal',
 			name: 'Show statistics',
 			callback: async () => {
-				await this.generateCustomers();
-				new StatisticsModal(this.app, this.tracker).open();
+				this.app.workspace.detachLeavesOfType(STATISTICS_VIEW_TYPE);
+
+				try {
+					this.registerView(
+						STATISTICS_VIEW_TYPE,
+						(leaf) => new StatisticsView(leaf, this.app, this.tracker.generateStatisticsMD())
+					);
+				} catch (e: any) { }
+
+				await this.app.workspace.getRightLeaf(false).setViewState({
+					type: STATISTICS_VIEW_TYPE,
+					active: true,
+				});
+
+				this.app.workspace.revealLeaf(
+					this.app.workspace.getLeavesOfType(STATISTICS_VIEW_TYPE)[0]
+				);
 			}
 		});
 	}
@@ -170,12 +182,11 @@ export default class CustomerTracking extends Plugin {
 	registerContextMenu() {
 
 		this.app.workspace.on("editor-menu", (menu, editor, view) => {
-			menu.addItem((item) => { 
+			menu.addItem((item) => {
 				item
 					.setTitle("Show initiative updates")
 					.setIcon("document")
-					.onClick( () => {
-						//this.showUpdatesForSelectedInitiative();
+					.onClick(() => {
 						this.showUpdatesForInitiativeAtCurrentLine();
 					});
 			});
@@ -187,16 +198,16 @@ export default class CustomerTracking extends Plugin {
 	public async showUpdatesForInitiativeAtCurrentLine() {
 		//Only allows one InitiativeUpdates view
 		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
-	
+
 		await this.app.workspace.getRightLeaf(false).setViewState({
-		  type: INITIATIVEUPDATES_VIEW_TYPE,
-		  active: true,
+			type: INITIATIVEUPDATES_VIEW_TYPE,
+			active: true,
 		});
 
 		this.app.workspace.revealLeaf(
-		  this.app.workspace.getLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE)[0]
+			this.app.workspace.getLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE)[0]
 		);
-	  }
+	}
 
 
 	load() {
@@ -219,6 +230,7 @@ export default class CustomerTracking extends Plugin {
 
 	onunload() {
 		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
+		this.app.workspace.detachLeavesOfType(STATISTICS_VIEW_TYPE);
 	}
 
 	async loadSettings() {
