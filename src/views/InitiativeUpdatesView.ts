@@ -50,6 +50,9 @@ export class InitiativeUpdatesView extends ItemView {
         const file = this.app.workspace.getActiveFile();
         let lineAtCaret = editor.getLine(editor.getCursor().line).trim();
 
+        if (lineAtCaret.length == 0)
+            return;
+
         //If the current file is under the CustomerBase folder, the line should match Customer Initiative Regex defined in settings
         //Since we have the customer name (file.basename) we can just gather the initiative and move on to finding all the updates
         if (file) {
