@@ -63,6 +63,26 @@ export class CustomerTracker {
         }
     }
 
+    public generateStatisticsMD(): string {
+		let md = "";
+        md += "| Person | Customer | Initiatives | WIP | Won | Lost | Other |\n"
+        md += "|--------|----------|-------------|-----|-----|------|-------|\n"
+
+		for (const [person, initiatives] of this.peopleUpdates.updates) {
+			let initiativesByStatus = this.peopleUpdates.numberOfInitiativesByStatus(person);	
+			md += "| {0} |".format(person);
+			md += "  {0} |".format(this.peopleUpdates.numberOfCustomers(person).toString());
+			md += "  {0} |".format(this.peopleUpdates.numberOfInitatives(person).toString());
+			md += "  {0} |".format(initiativesByStatus[0].toString());
+			md += "  {0} |".format(initiativesByStatus[1].toString());
+			md += "  {0} |".format(initiativesByStatus[2].toString());
+			md += "  {0} |".format(initiativesByStatus[3].toString());
+			md += "\n";
+		}
+
+		return md;
+    }
+
 
     public renderMD(filterSettings?: FilterSettings): string {
         if (this.customers.size == 0)
