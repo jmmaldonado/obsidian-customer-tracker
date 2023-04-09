@@ -198,20 +198,23 @@ export default class CustomerTracking extends Plugin {
 		);
 	  }
 
-	async onload() {
-		await this.loadSettings();
-		await this.generateCustomers();
-		this.registerCommands();
-		this.registerContextMenu();
-		this.registerMarkdownCodeBlockProcessor("customerTracking", (source, el, ctx) => registerQueryCodeBlock(source, el, ctx, this.tracker));
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new CustomerTrackerSettingsTab(this.app, this));
+	load() {
+		this.app.workspace.onLayoutReady(async () => {
+			await this.loadSettings();
+			await this.generateCustomers();
+			this.registerCommands();
+			this.registerContextMenu();
+			this.registerMarkdownCodeBlockProcessor("customerTracking", (source, el, ctx) => registerQueryCodeBlock(source, el, ctx, this.tracker));
 
-		this.registerView(
-			INITIATIVEUPDATES_VIEW_TYPE,
-			(leaf) => new InitiativeUpdatesView(leaf, this.app, this.tracker, this.settings)
-		);
+			// This adds a settings tab so the user can configure various aspects of the plugin
+			this.addSettingTab(new CustomerTrackerSettingsTab(this.app, this));
+
+			this.registerView(
+				INITIATIVEUPDATES_VIEW_TYPE,
+				(leaf) => new InitiativeUpdatesView(leaf, this.app, this.tracker, this.settings)
+			);
+		})
 	}
 
 	onunload() {
