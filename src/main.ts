@@ -50,6 +50,40 @@ export default class CustomerTracking extends Plugin {
 	}
 
 
+	async generatePersonalUpdatesFromPath(path: string) {
+		let person = "myself";
+		const { vault } = this.app;
+		let updateRegex = new RegExp(this.settings.peopleUpdateRegex);
+		const files = this.app.vault.getMarkdownFiles()
+		for (const file of files) {
+			if (!file.basename.startsWith("+") && file.path.contains(path)) {
+				let fileContent = await vault.cachedRead(file);
+				let lines = fileContent.split("\n").filter(line => line.includes("#"));
+				for (const line of lines) {
+					let updateLine = line.match(updateRegex);
+					if (updateLine) {
+						let extraction = new RegExp('\\[{2}(.*)#(.*)\\]{2}'); //[[Customer#Initiative]]
+						let extractionLine = updateLine[2].match(extraction);
+						if (extractionLine) {
+							let update = new CustomerUpdate();
+							update.customer = extractionLine[1];
+							update.initiative = extractionLine[2];
+							update.area = "";
+							update.date = new Date(updateLine[1]);
+							update.person = person;
+							update.raw = line;
+							update.file = file;
+							this.tracker.addUpdate(update);
+						} else {
+							console.log("ERR: Update line in file {0} has an incorrect backlink to the initiative: {1}".format(file.path, line));
+						}
+					}
+				}
+			}
+		}
+	}
+
+	
 	async generateCustomerInitiatives(): Promise<void> {
 		const { vault } = this.app;
 		let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
@@ -94,6 +128,7 @@ export default class CustomerTracking extends Plugin {
 		//before we start processing the updates from the people's notes
 		await this.generateCustomerInitiatives();
 		await this.generateUpdatesFromPeople();
+		await this.generatePersonalUpdatesFromPath(this.settings.journalBaseFolder);
 	}
 
 	registerCommands() {
