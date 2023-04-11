@@ -6,6 +6,7 @@ export interface CustomerTrackerSettings {
 	customerTrackingNote: string;
     customersBaseFolder: string;
 	peopleBaseFolder: string;
+	journalBaseFolder: string;
 	//areaRegex: string;
 	customerInitiativeRegex: string;
 	initiativeStatusRegex: string;
@@ -20,6 +21,7 @@ export const DEFAULT_SETTINGS: CustomerTrackerSettings = {
     customerTrackingNote: 'Customer Tracking',
 	customersBaseFolder: 'Spaces/Customers/',
 	peopleBaseFolder: 'Spaces/Management/Team/',
+	journalBaseFolder: 'Journal/',
 	//areaRegex: '^#{1}\\s(.*)',
 	customerInitiativeRegex: '^#{2}\\s(.*)',
 	initiativeStatusRegex: '^status::(.*)',
@@ -73,6 +75,17 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.peopleBaseFolder)
 				.onChange(async (value) => {
 					this.plugin.settings.peopleBaseFolder = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Journal base folder')
+			.setDesc('Base folder for daily notes')
+			.addText(text => text
+				.setPlaceholder('Journal/')
+				.setValue(this.plugin.settings.journalBaseFolder)
+				.onChange(async (value) => {
+					this.plugin.settings.journalBaseFolder = value;
 					await this.plugin.saveSettings();
 				}));
 
