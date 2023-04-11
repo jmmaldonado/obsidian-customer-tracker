@@ -66,6 +66,17 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
+			.setName('People base folder')
+			.setDesc('Base folder for people files')
+			.addText(text => text
+				.setPlaceholder('Spaces/Management/Team/')
+				.setValue(this.plugin.settings.peopleBaseFolder)
+				.onChange(async (value) => {
+					this.plugin.settings.peopleBaseFolder = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
 			.setName('Customer initiative regex')
 			.setDesc('Regex to detect initiatives in a customer note (ie: ## AREA NAME @ INITIATIVE status::... )')
 			.addText(text => text
