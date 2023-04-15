@@ -146,7 +146,7 @@ export default class CustomerTracking extends Plugin {
 
 		this.addCommand({
 			id: 'open-customer-tracker-modal-window',
-			name: 'Open filtering window',
+			name: 'Add customer updates / summary to current note...',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.tracker).open();
 			}
@@ -159,14 +159,6 @@ export default class CustomerTracking extends Plugin {
 				new SelectInitiativeModal(this.app, this.tracker, editor).open();
 			}
 		})
-
-		this.addCommand({
-			id: 'add-customer-tracking-summary-current-note',
-			name: 'Add customer tracking summary to current note',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection(this.tracker.renderMD());
-			}
-		});
 
 		this.addCommand({
 			id: 'generate-customers',
@@ -189,29 +181,6 @@ export default class CustomerTracking extends Plugin {
 			}
 		});
 
-		this.addCommand({
-			id: 'show-statistics-modal',
-			name: 'Show statistics',
-			callback: async () => {
-				this.app.workspace.detachLeavesOfType(STATISTICS_VIEW_TYPE);
-
-				try {
-					this.registerView(
-						STATISTICS_VIEW_TYPE,
-						(leaf) => new StatisticsView(leaf, this.app, this.tracker.generateStatisticsMD())
-					);
-				} catch (e: any) { }
-
-				await this.app.workspace.getRightLeaf(false).setViewState({
-					type: STATISTICS_VIEW_TYPE,
-					active: true,
-				});
-
-				this.app.workspace.revealLeaf(
-					this.app.workspace.getLeavesOfType(STATISTICS_VIEW_TYPE)[0]
-				);
-			}
-		});
 	}
 
 	registerContextMenu() {

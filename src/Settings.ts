@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import CustomerTracker from './main';
+import { StatisticsView, STATISTICS_VIEW_TYPE } from './views/StatisticsView';
 
 
 export interface CustomerTrackerSettings {
@@ -89,6 +90,10 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		
+		containerEl.createEl('h2', { text: 'Advanced settings' });
+
+
 		new Setting(containerEl)
 			.setName('Customer initiative regex')
 			.setDesc('Regex to detect initiatives in a customer note (ie: ## AREA NAME @ INITIATIVE status::... )')
@@ -131,6 +136,30 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.peopleUpdateRegex = value;
 					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.addButton(bot => bot
+				.setButtonText("Show statistics")
+				.setCta()
+				.onClick(async () => {
+					this.app.workspace.detachLeavesOfType(STATISTICS_VIEW_TYPE);
+
+					try {
+						this.plugin.registerView(
+							STATISTICS_VIEW_TYPE,
+							(leaf) => new StatisticsView(leaf, this.app, this.plugin.tracker.generateStatisticsMD())
+						);
+					} catch (e: any) { }
+	
+					await this.app.workspace.getRightLeaf(false).setViewState({
+						type: STATISTICS_VIEW_TYPE,
+						active: true,
+					});
+	
+					this.app.workspace.revealLeaf(
+						this.app.workspace.getLeavesOfType(STATISTICS_VIEW_TYPE)[0]
+					);
 				}));
 	}
 
