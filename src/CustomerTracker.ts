@@ -152,7 +152,7 @@ export class CustomerTracker {
                 peopleLastUpdateSorted.sort((a,b) => { return b.date.getTime() - a.date.getTime(); });
 
                 for (let update of peopleLastUpdateSorted) {
-                    md += " " + update.getLinkToUpdateAndPerson("Last update") + "</br> "
+                    md += " " + update.getLinkToUpdateAndPerson(update.date.toISOString().split("T")[0]) + "</br> "
                 }
 
                 md += " |\n"
