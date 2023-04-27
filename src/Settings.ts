@@ -8,10 +8,8 @@ export interface CustomerTrackerSettings {
     customersBaseFolder: string;
 	peopleBaseFolder: string;
 	journalBaseFolder: string;
-	//areaRegex: string;
 	customerInitiativeRegex: string;
 	initiativeStatusRegex: string;
-	peopleDateRegex: string;
 	peopleUpdateRegex: string;
 
 	//TODO: Future implementation to separate customer areas in different files
@@ -23,10 +21,8 @@ export const DEFAULT_SETTINGS: CustomerTrackerSettings = {
 	customersBaseFolder: 'Spaces/Customers/',
 	peopleBaseFolder: 'Spaces/Management/Team/',
 	journalBaseFolder: 'Journal/',
-	//areaRegex: '^#{1}\\s(.*)',
 	customerInitiativeRegex: '^#{2}\\s(.*)',
 	initiativeStatusRegex: '^status::(.*)',
-	peopleDateRegex: '^#{4}\\s(\\d{4}-\\d{2}-\\d{2}).*', //#### yyyy-MM-dd ...
 	peopleUpdateRegex: '^#{5}\\s(\\d{4}-\\d{2}-\\d{2})\\s(\\[{2}.*\\]{2}).*', //##### yyyy-MM-dd [[...]] ...
 	customerAreasInMainFile: true
 }
@@ -113,17 +109,6 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.initiativeStatusRegex)
 				.onChange(async (value) => {
 					this.plugin.settings.initiativeStatusRegex = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('People date regex')
-			.setDesc('Detects the update date in a person note (ie, #### yyyy-MM-dd ...)')
-			.addText(text => text
-				.setPlaceholder('^#{4}\\s(\\d{4}-\\d{2}-\\d{2}).*')
-				.setValue(this.plugin.settings.peopleDateRegex)
-				.onChange(async (value) => {
-					this.plugin.settings.peopleDateRegex = value;
 					await this.plugin.saveSettings();
 				}));
 
