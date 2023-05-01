@@ -32,9 +32,8 @@ export async function getRecentlyUpdatedHeadersMD(customerTracking: CustomerTrac
 
     updatedHeaders.sort((a,b) => {return b.date.getTime() - a.date.getTime(); });
 
-    let headersText: string = "[[Telefonica]] \n";
+    let headersText: string = "";
     for (let header of updatedHeaders) {
-        //headersText += "" + header.date.toDateString() + " " + header.text + "\n";
         let linkText = "{0} {1} ({2})".format(
             header.date.toISOString().split("T")[0],
             header.text,
