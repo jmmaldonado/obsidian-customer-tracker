@@ -146,15 +146,15 @@ export default class CustomerTracking extends Plugin {
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
 
 		this.addCommand({
-			id: 'open-customer-tracker-modal-window',
-			name: 'Add customer updates / summary to current note...',
+			id: 'customerTracker-open-customer-tracker-modal-window',
+			name: 'Add summary / customer updates to current note...',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.tracker).open();
 			}
 		})
 
 		this.addCommand({
-			id: 'add-update-header-current-note',
+			id: 'customerTracker-add-update-header-current-note',
 			name: 'Add update header to current note',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				new SelectInitiativeModal(this.app, this.tracker, editor).open();
@@ -162,7 +162,7 @@ export default class CustomerTracking extends Plugin {
 		})
 
 		this.addCommand({
-			id: 'generate-customers',
+			id: 'customerTracker-generate-customers',
 			name: 'Reload customer updates',
 			callback: () => {
 				this.generateCustomers();
@@ -178,7 +178,7 @@ export default class CustomerTracking extends Plugin {
 		})
 
 		this.addCommand({
-			id: 'add-initiatives-to-followup-in-person-note',
+			id: 'customerTracker-add-initiatives-to-followup-in-person-note',
 			name: 'Add initiatives to followup in person note',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				const file = this.app.workspace.getActiveFile();
