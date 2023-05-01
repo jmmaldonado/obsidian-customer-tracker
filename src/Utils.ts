@@ -50,3 +50,16 @@ export async function getLinesOfHeader(vault: Vault, file: TFile | null, header:
 
     return result;
 }
+
+export function normalizeFilename(fileName: string): string {
+    const illegalSymbols = [':', '#', '/', '\\', '|', '?', '*', '<', '>', '"'];
+    if (illegalSymbols.some((el) => fileName.contains(el))) {
+        illegalSymbols.forEach((ilSymbol) => {
+            fileName = fileName.replace(ilSymbol, '');
+        });
+
+        return fileName;
+    } else {
+        return fileName;
+    }
+}
