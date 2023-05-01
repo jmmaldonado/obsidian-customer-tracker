@@ -1,4 +1,4 @@
-import { TFile, Vault } from "obsidian";
+import { normalizePath, TFile, TFolder, Vault } from "obsidian";
 
 // Returns the number of # at the beginning of the line
 function headerDepth(line: string): number {
@@ -62,4 +62,13 @@ export function normalizeFilename(fileName: string): string {
     } else {
         return fileName;
     }
+}
+
+export async function checkAndCreateFolder(vault: Vault, folderpath: string) {
+    folderpath = normalizePath(folderpath);
+    const folder = vault.getAbstractFileByPath(folderpath);
+    if (folder && folder instanceof TFolder) {
+        return;
+    }
+    await vault.createFolder(folderpath);
 }
