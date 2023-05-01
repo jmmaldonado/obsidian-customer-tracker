@@ -1,15 +1,15 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import CustomerTracker from './main';
+import { StatisticsView, STATISTICS_VIEW_TYPE } from './views/StatisticsView';
 
 
 export interface CustomerTrackerSettings {
 	customerTrackingNote: string;
     customersBaseFolder: string;
 	peopleBaseFolder: string;
-	//areaRegex: string;
+	journalBaseFolder: string;
 	customerInitiativeRegex: string;
 	initiativeStatusRegex: string;
-	peopleDateRegex: string;
 	peopleUpdateRegex: string;
 
 	//TODO: Future implementation to separate customer areas in different files
@@ -20,10 +20,9 @@ export const DEFAULT_SETTINGS: CustomerTrackerSettings = {
     customerTrackingNote: 'Customer Tracking',
 	customersBaseFolder: 'Spaces/Customers/',
 	peopleBaseFolder: 'Spaces/Management/Team/',
-	//areaRegex: '^#{1}\\s(.*)',
+	journalBaseFolder: 'Journal/',
 	customerInitiativeRegex: '^#{2}\\s(.*)',
 	initiativeStatusRegex: '^status::(.*)',
-	peopleDateRegex: '^#{4}\\s(\\d{4}-\\d{2}-\\d{2}).*', //#### yyyy-MM-dd ...
 	peopleUpdateRegex: '^#{5}\\s(\\d{4}-\\d{2}-\\d{2})\\s(\\[{2}.*\\]{2}).*', //##### yyyy-MM-dd [[...]] ...
 	customerAreasInMainFile: true
 }
@@ -66,6 +65,32 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
+			.setName('People base folder')
+			.setDesc('Base folder for people files')
+			.addText(text => text
+				.setPlaceholder('Spaces/Management/Team/')
+				.setValue(this.plugin.settings.peopleBaseFolder)
+				.onChange(async (value) => {
+					this.plugin.settings.peopleBaseFolder = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Journal base folder')
+			.setDesc('Base folder for daily notes')
+			.addText(text => text
+				.setPlaceholder('Journal/')
+				.setValue(this.plugin.settings.journalBaseFolder)
+				.onChange(async (value) => {
+					this.plugin.settings.journalBaseFolder = value;
+					await this.plugin.saveSettings();
+				}));
+
+		
+		containerEl.createEl('h2', { text: 'Advanced settings' });
+
+
+		new Setting(containerEl)
 			.setName('Customer initiative regex')
 			.setDesc('Regex to detect initiatives in a customer note (ie: ## AREA NAME @ INITIATIVE status::... )')
 			.addText(text => text
@@ -88,17 +113,6 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('People date regex')
-			.setDesc('Detects the update date in a person note (ie, #### yyyy-MM-dd ...)')
-			.addText(text => text
-				.setPlaceholder('^#{4}\\s(\\d{4}-\\d{2}-\\d{2}).*')
-				.setValue(this.plugin.settings.peopleDateRegex)
-				.onChange(async (value) => {
-					this.plugin.settings.peopleDateRegex = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
 			.setName('People initiative update regex')
 			.setDesc('Detects the initiative update in a person note (ie, ##### [[...]] ...)')
 			.addText(text => text
@@ -107,6 +121,30 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.peopleUpdateRegex = value;
 					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.addButton(bot => bot
+				.setButtonText("Show statistics")
+				.setCta()
+				.onClick(async () => {
+					this.app.workspace.detachLeavesOfType(STATISTICS_VIEW_TYPE);
+
+					try {
+						this.plugin.registerView(
+							STATISTICS_VIEW_TYPE,
+							(leaf) => new StatisticsView(leaf, this.app, this.plugin.tracker.generateStatisticsMD())
+						);
+					} catch (e: any) { }
+	
+					await this.app.workspace.getRightLeaf(false).setViewState({
+						type: STATISTICS_VIEW_TYPE,
+						active: true,
+					});
+	
+					this.app.workspace.revealLeaf(
+						this.app.workspace.getLeavesOfType(STATISTICS_VIEW_TYPE)[0]
+					);
 				}));
 	}
 

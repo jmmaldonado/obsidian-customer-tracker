@@ -145,8 +145,14 @@ export class CustomerTracker {
                 md += "  {0} |".format(Math.ceil((new Date().getTime() - initiative.lastUpdate.getTime()) / (1000 * 3600 * 24)).toString());
                 md += "  {0} |".format(initiative.firstUpdate.toDateString());
 
-                for (let [person, update] of peopleLastUpdate) {
-                    md += " " + update.getLinkToUpdateAndPerson("Last update") + "</br> "
+                //FIX #35 Sort peopleLastUpdate by date descending
+                let peopleLastUpdateSorted: CustomerUpdate[] = [];
+                for (let update of peopleLastUpdate.values())
+                    peopleLastUpdateSorted.push(update);
+                peopleLastUpdateSorted.sort((a,b) => { return b.date.getTime() - a.date.getTime(); });
+
+                for (let update of peopleLastUpdateSorted) {
+                    md += " " + update.getLinkToUpdateAndPerson(update.date.toISOString().split("T")[0]) + "</br> "
                 }
 
                 md += " |\n"

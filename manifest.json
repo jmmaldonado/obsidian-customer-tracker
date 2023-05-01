@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-customer-tracker-plugin",
 	"name": "Customer tracker",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"minAppVersion": "0.15.0",
 	"description": "This plugin allows you to summarize the updates happening at different initiatives and areas of customers",
 	"author": "Maldini",

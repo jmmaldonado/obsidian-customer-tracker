@@ -9,6 +9,7 @@ import { SelectInitiativeModal } from './views/SelectInitiativeModal';
 import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './views/InitiativeUpdatesView';
 import { registerQueryCodeBlock } from './views/QueryCodeBlock';
 import { StatisticsView, STATISTICS_VIEW_TYPE } from './views/StatisticsView';
+import { RecentUpdatesView, RECENTUPDATES_VIEW_TYPE } from './views/RecentUpdatesView';
 
 
 export default class CustomerTracking extends Plugin {
@@ -50,6 +51,40 @@ export default class CustomerTracking extends Plugin {
 	}
 
 
+	async generatePersonalUpdatesFromPath(path: string) {
+		let person = "myself";
+		const { vault } = this.app;
+		let updateRegex = new RegExp(this.settings.peopleUpdateRegex);
+		const files = this.app.vault.getMarkdownFiles()
+		for (const file of files) {
+			if (!file.basename.startsWith("+") && file.path.contains(path)) {
+				let fileContent = await vault.cachedRead(file);
+				let lines = fileContent.split("\n").filter(line => line.includes("#"));
+				for (const line of lines) {
+					let updateLine = line.match(updateRegex);
+					if (updateLine) {
+						let extraction = new RegExp('\\[{2}(.*)#(.*)\\]{2}'); //[[Customer#Initiative]]
+						let extractionLine = updateLine[2].match(extraction);
+						if (extractionLine) {
+							let update = new CustomerUpdate();
+							update.customer = extractionLine[1];
+							update.initiative = extractionLine[2];
+							update.area = "";
+							update.date = new Date(updateLine[1]);
+							update.person = person;
+							update.raw = line;
+							update.file = file;
+							this.tracker.addUpdate(update);
+						} else {
+							console.log("ERR: Update line in file {0} has an incorrect backlink to the initiative: {1}".format(file.path, line));
+						}
+					}
+				}
+			}
+		}
+	}
+
+	
 	async generateCustomerInitiatives(): Promise<void> {
 		const { vault } = this.app;
 		let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
@@ -94,6 +129,7 @@ export default class CustomerTracking extends Plugin {
 		//before we start processing the updates from the people's notes
 		await this.generateCustomerInitiatives();
 		await this.generateUpdatesFromPeople();
+		await this.generatePersonalUpdatesFromPath(this.settings.journalBaseFolder);
 	}
 
 	registerCommands() {
@@ -110,15 +146,15 @@ export default class CustomerTracking extends Plugin {
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
 
 		this.addCommand({
-			id: 'open-customer-tracker-modal-window',
-			name: 'Open filtering window',
+			id: 'customerTracker-open-customer-tracker-modal-window',
+			name: 'Add summary / customer updates to current note...',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				new FilterModal(this.app, this.app.workspace.activeEditor?.editor, this.tracker).open();
 			}
 		})
 
 		this.addCommand({
-			id: 'add-update-header-current-note',
+			id: 'customerTracker-add-update-header-current-note',
 			name: 'Add update header to current note',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				new SelectInitiativeModal(this.app, this.tracker, editor).open();
@@ -126,15 +162,7 @@ export default class CustomerTracking extends Plugin {
 		})
 
 		this.addCommand({
-			id: 'add-customer-tracking-summary-current-note',
-			name: 'Add customer tracking summary to current note',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection(this.tracker.renderMD());
-			}
-		});
-
-		this.addCommand({
-			id: 'generate-customers',
+			id: 'customerTracker-generate-customers',
 			name: 'Reload customer updates',
 			callback: () => {
 				this.generateCustomers();
@@ -142,7 +170,15 @@ export default class CustomerTracking extends Plugin {
 		});
 
 		this.addCommand({
-			id: 'add-initiatives-to-followup-in-person-note',
+			id: 'customerTracker-recent-updates',
+			name: 'Show recent updates',
+			callback: () => {
+				this.showRecentUpdates();
+			}
+		})
+
+		this.addCommand({
+			id: 'customerTracker-add-initiatives-to-followup-in-person-note',
 			name: 'Add initiatives to followup in person note',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				const file = this.app.workspace.getActiveFile();
@@ -154,29 +190,21 @@ export default class CustomerTracking extends Plugin {
 			}
 		});
 
-		this.addCommand({
-			id: 'show-statistics-modal',
-			name: 'Show statistics',
-			callback: async () => {
-				this.app.workspace.detachLeavesOfType(STATISTICS_VIEW_TYPE);
+	}
 
-				try {
-					this.registerView(
-						STATISTICS_VIEW_TYPE,
-						(leaf) => new StatisticsView(leaf, this.app, this.tracker.generateStatisticsMD())
-					);
-				} catch (e: any) { }
+	async showRecentUpdates() {
 
-				await this.app.workspace.getRightLeaf(false).setViewState({
-					type: STATISTICS_VIEW_TYPE,
-					active: true,
-				});
+		//Only allows one InitiativeUpdates view
+		this.app.workspace.detachLeavesOfType(RECENTUPDATES_VIEW_TYPE);
 
-				this.app.workspace.revealLeaf(
-					this.app.workspace.getLeavesOfType(STATISTICS_VIEW_TYPE)[0]
-				);
-			}
+		await this.app.workspace.getRightLeaf(false).setViewState({
+			type: RECENTUPDATES_VIEW_TYPE,
+			active: true,
 		});
+
+		this.app.workspace.revealLeaf(
+			this.app.workspace.getLeavesOfType(RECENTUPDATES_VIEW_TYPE)[0]
+		);
 	}
 
 	registerContextMenu() {
@@ -224,6 +252,11 @@ export default class CustomerTracking extends Plugin {
 			this.registerView(
 				INITIATIVEUPDATES_VIEW_TYPE,
 				(leaf) => new InitiativeUpdatesView(leaf, this.app, this.tracker, this.settings)
+			);
+
+			this.registerView(
+				RECENTUPDATES_VIEW_TYPE,
+				(leaf) => new RecentUpdatesView(leaf, this.app, this.tracker, this.settings)
 			);
 		})
 	}
