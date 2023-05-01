@@ -11,6 +11,7 @@ import { registerQueryCodeBlock } from './views/QueryCodeBlock';
 import { writeFile } from './Utils';
 import { getRecentlyUpdatedHeadersMD } from './helpers/RecentlyUpdatedHeaders';
 import { generateSummaryNoteContentMD } from './helpers/SummaryNoteContent';
+import { generateCustomerInitiatives } from './helpers/CustomerFiles';
 
 
 export default class CustomerTracking extends Plugin {
@@ -85,50 +86,12 @@ export default class CustomerTracking extends Plugin {
 		}
 	}
 
-	
-	async generateCustomerInitiatives(): Promise<void> {
-		const { vault } = this.app;
-		let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
-		const files = this.app.vault.getMarkdownFiles()
-		for (const file of files) {
-			if (!file.basename.startsWith("+") && file.path.contains(this.settings.customersBaseFolder)) {
-				let customer: Customer = new Customer(file.basename, file.path);
-				customer.addArea("");
-				let fileContent = await vault.cachedRead(file);
-				let lines = fileContent.split("\n"); //.filter(line => line.includes("#"))
-				for (let i = 0; i < lines.length; i++) {
-					let line = lines[i];
-					let initiativeLine = line.match(initiativeRegex);
-					if (initiativeLine) {
-						let initiative: CustomerInitiative = new CustomerInitiative(initiativeLine[1], "", customer.name);
-						initiative.raw = initiativeLine[0];
-						
-						//Try to get the status
-						initiative.status = "";
-						if (i + 1 < lines.length) {
-							let nextLine = lines[i + 1];
-							let statusRegex = new RegExp(this.settings.initiativeStatusRegex);
-							let statusLine = nextLine.match(statusRegex);
-							if (statusLine) {
-								initiative.status = statusLine[1];
-							}
-						}
-
-						customer.addInitiativeToArea("", initiative);
-					}
-
-				}
-				this.tracker.addCustomer(customer);
-			}
-		}
-	}
-
 
 	async generateCustomers(): Promise<void> {
 		this.tracker = new CustomerTracker();
 		//We need to do this in two steps to ensure we have all the customer initiatives
 		//before we start processing the updates from the people's notes
-		await this.generateCustomerInitiatives();
+		await generateCustomerInitiatives(this);
 		await this.generateUpdatesFromPeople();
 		await this.generatePersonalUpdatesFromPath(this.settings.journalBaseFolder);
 	}
