@@ -10,6 +10,7 @@ import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './views/Init
 import { registerQueryCodeBlock } from './views/QueryCodeBlock';
 import { writeFile } from './Utils';
 import { getRecentlyUpdatedHeadersMD } from './helpers/RecentlyUpdatedHeaders';
+import { generateSummaryNoteContentMD } from './helpers/SummaryNoteContent';
 
 
 export default class CustomerTracking extends Plugin {
@@ -244,6 +245,9 @@ export default class CustomerTracking extends Plugin {
 			this.registerCommands();
 			this.registerContextMenu();
 			this.registerMarkdownCodeBlockProcessor("customerTracking", (source, el, ctx) => registerQueryCodeBlock(source, el, ctx, this.tracker));
+
+			//GENERATE SUMMARY NOTE CONTENT
+			await writeFile(this.settings.customerTrackerBaseFolder, this.settings.customerTrackingNote + ".md", generateSummaryNoteContentMD(), true);
 
 			// This adds a settings tab so the user can configure various aspects of the plugin
 			this.addSettingTab(new CustomerTrackerSettingsTab(this.app, this));
