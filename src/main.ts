@@ -9,6 +9,7 @@ import { SelectInitiativeModal } from './views/SelectInitiativeModal';
 import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './views/InitiativeUpdatesView';
 import { registerQueryCodeBlock } from './views/QueryCodeBlock';
 import { StatisticsView, STATISTICS_VIEW_TYPE } from './views/StatisticsView';
+import { RecentUpdatesView, RECENTUPDATES_VIEW_TYPE } from './views/RecentUpdatesView';
 
 
 export default class CustomerTracking extends Plugin {
@@ -169,6 +170,14 @@ export default class CustomerTracking extends Plugin {
 		});
 
 		this.addCommand({
+			id: 'customerTracker-recent-updates',
+			name: 'Show recent updates',
+			callback: () => {
+				this.showRecentUpdates();
+			}
+		})
+
+		this.addCommand({
 			id: 'add-initiatives-to-followup-in-person-note',
 			name: 'Add initiatives to followup in person note',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
@@ -181,6 +190,21 @@ export default class CustomerTracking extends Plugin {
 			}
 		});
 
+	}
+
+	async showRecentUpdates() {
+
+		//Only allows one InitiativeUpdates view
+		this.app.workspace.detachLeavesOfType(RECENTUPDATES_VIEW_TYPE);
+
+		await this.app.workspace.getRightLeaf(false).setViewState({
+			type: RECENTUPDATES_VIEW_TYPE,
+			active: true,
+		});
+
+		this.app.workspace.revealLeaf(
+			this.app.workspace.getLeavesOfType(RECENTUPDATES_VIEW_TYPE)[0]
+		);
 	}
 
 	registerContextMenu() {
@@ -228,6 +252,11 @@ export default class CustomerTracking extends Plugin {
 			this.registerView(
 				INITIATIVEUPDATES_VIEW_TYPE,
 				(leaf) => new InitiativeUpdatesView(leaf, this.app, this.tracker, this.settings)
+			);
+
+			this.registerView(
+				RECENTUPDATES_VIEW_TYPE,
+				(leaf) => new RecentUpdatesView(leaf, this.app, this.tracker, this.settings)
 			);
 		})
 	}
