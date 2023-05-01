@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { Editor, MarkdownView, normalizePath, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS } from './Settings';
 import { CustomerTracker } from 'src/CustomerTracker'
 import { Customer } from "src/Customer";
@@ -8,8 +8,8 @@ import { CustomerUpdate } from './CustomerUpdate';
 import { SelectInitiativeModal } from './views/SelectInitiativeModal';
 import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './views/InitiativeUpdatesView';
 import { registerQueryCodeBlock } from './views/QueryCodeBlock';
-import { StatisticsView, STATISTICS_VIEW_TYPE } from './views/StatisticsView';
-import { RecentUpdatesView, RECENTUPDATES_VIEW_TYPE } from './views/RecentUpdatesView';
+import { writeFile } from './Utils';
+import { getRecentlyUpdatedHeadersMD } from './helpers/RecentlyUpdatedHeaders';
 
 
 export default class CustomerTracking extends Plugin {
@@ -194,17 +194,16 @@ export default class CustomerTracking extends Plugin {
 
 	async showRecentUpdates() {
 
-		//Only allows one InitiativeUpdates view
-		this.app.workspace.detachLeavesOfType(RECENTUPDATES_VIEW_TYPE);
+		//GET RECENT UPDATES
+		let updatedHeaders = await getRecentlyUpdatedHeadersMD(this);
 
-		await this.app.workspace.getRightLeaf(false).setViewState({
-			type: RECENTUPDATES_VIEW_TYPE,
-			active: true,
-		});
+		//UPDATE AUXILIARY MD FILE
+		let file = await writeFile(this.settings.customerTrackerBaseFolder, "+RECENT UPDATES.md", updatedHeaders, true);
 
-		this.app.workspace.revealLeaf(
-			this.app.workspace.getLeavesOfType(RECENTUPDATES_VIEW_TYPE)[0]
-		);
+		//SHOW AUXILIARY MD FILE IN SIDE PANEL
+		if (file)
+			this.app.workspace.getRightLeaf(false).openFile(file);
+
 	}
 
 	registerContextMenu() {
@@ -253,17 +252,11 @@ export default class CustomerTracking extends Plugin {
 				INITIATIVEUPDATES_VIEW_TYPE,
 				(leaf) => new InitiativeUpdatesView(leaf, this.app, this.tracker, this.settings)
 			);
-
-			this.registerView(
-				RECENTUPDATES_VIEW_TYPE,
-				(leaf) => new RecentUpdatesView(leaf, this.app, this.tracker, this.settings)
-			);
 		})
 	}
 
 	onunload() {
 		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
-		this.app.workspace.detachLeavesOfType(STATISTICS_VIEW_TYPE);
 	}
 
 	async loadSettings() {
