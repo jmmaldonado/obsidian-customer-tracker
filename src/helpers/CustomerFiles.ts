@@ -37,6 +37,8 @@ export async function generateCustomerInitiatives(customerTracking: CustomerTrac
 
                     //Get additional information for the initiative
                     initiative.status = extractAdditionalData("status", initiativeContent);
+                    initiative.partner = extractAdditionalData("partner", initiativeContent);
+                    initiative.speciality = extractAdditionalData("speciality", initiativeContent);
 
                     customer.addInitiativeToArea("", initiative);
                 }
