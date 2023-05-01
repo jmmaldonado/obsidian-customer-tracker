@@ -1,6 +1,11 @@
 import { CustomerUpdate } from "src/CustomerUpdate";
 
-
+/** Defines a customer initiative the team is working on
+ * Can have additional information using the following key::value
+ * status::
+ * partner::
+ * speciality::
+ */
 export class CustomerInitiative {
     name: string;
     area: string;
@@ -10,6 +15,8 @@ export class CustomerInitiative {
     firstUpdate: Date;
     lastUpdate: Date;
     status: string;
+    partner: string;
+    speciality: string;
     raw: string;
 
     public constructor(name: string, area: string, customer: string) {
@@ -21,6 +28,8 @@ export class CustomerInitiative {
         this.firstUpdate = new Date("9999-12-31");
         this.lastUpdate = new Date("1900-01-01");
         this.status = "";
+        this.partner = "";
+        this.speciality = "";
         this.raw = "";
     }
 
