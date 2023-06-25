@@ -1,4 +1,4 @@
-import { TFile, Vault } from "obsidian";
+import { normalizePath, TFile, TFolder, Vault } from "obsidian";
 
 // Returns the number of # at the beginning of the line
 function headerDepth(line: string): number {
@@ -49,4 +49,50 @@ export async function getLinesOfHeader(vault: Vault, file: TFile | null, header:
     }
 
     return result;
+}
+
+export function normalizeFilename(fileName: string): string {
+    const illegalSymbols = [':', '#', '/', '\\', '|', '?', '*', '<', '>', '"'];
+    if (illegalSymbols.some((el) => fileName.contains(el))) {
+        illegalSymbols.forEach((ilSymbol) => {
+            fileName = fileName.replace(ilSymbol, '');
+        });
+
+        return fileName;
+    } else {
+        return fileName;
+    }
+}
+
+export async function checkAndCreateFolder(vault: Vault, folderpath: string) {
+    folderpath = normalizePath(folderpath);
+    const folder = vault.getAbstractFileByPath(folderpath);
+    if (folder && folder instanceof TFolder) {
+        return;
+    }
+    await vault.createFolder(folderpath);
+}
+
+
+export async function writeFile(path: string, fileName: string, content: string, replaceExistingContent: boolean): Promise<TFile | null> {
+    let filePath;
+    fileName = normalizeFilename(fileName);
+    await checkAndCreateFolder(this.app.vault, path);
+
+    filePath = path ? normalizePath(`${path}/${fileName}`) : normalizePath(`/${fileName}`);
+
+    //If the file exists, we delete it if replaceExistingContent is true or return false 
+    if (await this.app.vault.adapter.exists(filePath)) {
+        let file = this.app.vault.getAbstractFileByPath(filePath);
+        if (file && replaceExistingContent) {
+            //File exist and we need to replace existing content
+            await this.app.vault.delete(file);
+        } else
+            return null;
+    } 
+    
+    //At this point the filePath should not exist (because it didnt exist in the first place or because we deleted it)
+    //So we create a new file with the required content.
+    const newFile: TFile = await this.app.vault.create(filePath, content);
+    return newFile;
 }

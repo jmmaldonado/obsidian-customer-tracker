@@ -4,6 +4,7 @@ import { StatisticsView, STATISTICS_VIEW_TYPE } from './views/StatisticsView';
 
 
 export interface CustomerTrackerSettings {
+	customerTrackerBaseFolder: string;
 	customerTrackingNote: string;
     customersBaseFolder: string;
 	peopleBaseFolder: string;
@@ -17,7 +18,8 @@ export interface CustomerTrackerSettings {
 }
 
 export const DEFAULT_SETTINGS: CustomerTrackerSettings = {
-    customerTrackingNote: 'Customer Tracking',
+    customerTrackerBaseFolder: 'Customer Tracker/',
+	customerTrackingNote: '+SUMMARY',
 	customersBaseFolder: 'Spaces/Customers/',
 	peopleBaseFolder: 'Spaces/Management/Team/',
 	journalBaseFolder: 'Journal/',
@@ -42,11 +44,22 @@ export class CustomerTrackerSettingsTab extends PluginSettingTab {
 
 		containerEl.createEl('h2', { text: 'Settings for Customer Tracker plugin.' });
 
-        new Setting(containerEl)
+		new Setting(containerEl)
+			.setName('Customer Tracker base folder')
+			.setDesc('Base folder for customer tracker files')
+			.addText(text => text
+				.setPlaceholder('Customer Tracker/')
+				.setValue(this.plugin.settings.customerTrackerBaseFolder)
+				.onChange(async (value) => {
+					this.plugin.settings.customerTrackerBaseFolder = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
 			.setName('Customer tracking note')
 			.setDesc('Note name to render customer tracking information')
 			.addText(text => text
-				.setPlaceholder('Customer Tracking')
+				.setPlaceholder('+ SUMMARY')
 				.setValue(this.plugin.settings.customerTrackingNote)
 				.onChange(async (value) => {
 					this.plugin.settings.customerTrackingNote = value;

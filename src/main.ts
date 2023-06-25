@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { Editor, MarkdownView, normalizePath, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { CustomerTrackerSettings, CustomerTrackerSettingsTab, DEFAULT_SETTINGS } from './Settings';
 import { CustomerTracker } from 'src/CustomerTracker'
 import { Customer } from "src/Customer";
@@ -8,8 +8,11 @@ import { CustomerUpdate } from './CustomerUpdate';
 import { SelectInitiativeModal } from './views/SelectInitiativeModal';
 import { InitiativeUpdatesView, INITIATIVEUPDATES_VIEW_TYPE } from './views/InitiativeUpdatesView';
 import { registerQueryCodeBlock } from './views/QueryCodeBlock';
-import { StatisticsView, STATISTICS_VIEW_TYPE } from './views/StatisticsView';
-import { RecentUpdatesView, RECENTUPDATES_VIEW_TYPE } from './views/RecentUpdatesView';
+import { writeFile } from './Utils';
+import { getRecentlyUpdatedHeadersMD } from './helpers/RecentlyUpdatedHeaders';
+import { generateSummaryNoteContentMD } from './helpers/SummaryNoteContent';
+import { generateCustomerInitiatives } from './helpers/CustomerFiles';
+import { generateDashboardNoteCSVContent } from './helpers/DashboardNoteContent';
 
 
 export default class CustomerTracking extends Plugin {
@@ -84,52 +87,20 @@ export default class CustomerTracking extends Plugin {
 		}
 	}
 
-	
-	async generateCustomerInitiatives(): Promise<void> {
-		const { vault } = this.app;
-		let initiativeRegex = new RegExp(this.settings.customerInitiativeRegex);
-		const files = this.app.vault.getMarkdownFiles()
-		for (const file of files) {
-			if (!file.basename.startsWith("+") && file.path.contains(this.settings.customersBaseFolder)) {
-				let customer: Customer = new Customer(file.basename, file.path);
-				customer.addArea("");
-				let fileContent = await vault.cachedRead(file);
-				let lines = fileContent.split("\n"); //.filter(line => line.includes("#"))
-				for (let i = 0; i < lines.length; i++) {
-					let line = lines[i];
-					let initiativeLine = line.match(initiativeRegex);
-					if (initiativeLine) {
-						let initiative: CustomerInitiative = new CustomerInitiative(initiativeLine[1], "", customer.name);
-						initiative.raw = initiativeLine[0];
-						
-						//Try to get the status
-						initiative.status = "";
-						if (i + 1 < lines.length) {
-							let nextLine = lines[i + 1];
-							let statusRegex = new RegExp(this.settings.initiativeStatusRegex);
-							let statusLine = nextLine.match(statusRegex);
-							if (statusLine) {
-								initiative.status = statusLine[1];
-							}
-						}
-
-						customer.addInitiativeToArea("", initiative);
-					}
-
-				}
-				this.tracker.addCustomer(customer);
-			}
-		}
-	}
-
 
 	async generateCustomers(): Promise<void> {
 		this.tracker = new CustomerTracker();
 		//We need to do this in two steps to ensure we have all the customer initiatives
 		//before we start processing the updates from the people's notes
-		await this.generateCustomerInitiatives();
+		await generateCustomerInitiatives(this);
 		await this.generateUpdatesFromPeople();
 		await this.generatePersonalUpdatesFromPath(this.settings.journalBaseFolder);
+
+		//GENERATE SUMMARY NOTE CONTENT
+		await writeFile(this.settings.customerTrackerBaseFolder, this.settings.customerTrackingNote + ".md", generateSummaryNoteContentMD(), true);
+
+		//GENERATE DASHBOARD NOTE CONTENT
+		await writeFile(this.settings.customerTrackerBaseFolder, "+CSV_EXPORT.md", generateDashboardNoteCSVContent(this), true);
 	}
 
 	registerCommands() {
@@ -194,17 +165,16 @@ export default class CustomerTracking extends Plugin {
 
 	async showRecentUpdates() {
 
-		//Only allows one InitiativeUpdates view
-		this.app.workspace.detachLeavesOfType(RECENTUPDATES_VIEW_TYPE);
+		//GET RECENT UPDATES
+		let updatedHeaders = await getRecentlyUpdatedHeadersMD(this);
 
-		await this.app.workspace.getRightLeaf(false).setViewState({
-			type: RECENTUPDATES_VIEW_TYPE,
-			active: true,
-		});
+		//UPDATE AUXILIARY MD FILE
+		let file = await writeFile(this.settings.customerTrackerBaseFolder, "+RECENT UPDATES.md", updatedHeaders, true);
 
-		this.app.workspace.revealLeaf(
-			this.app.workspace.getLeavesOfType(RECENTUPDATES_VIEW_TYPE)[0]
-		);
+		//SHOW AUXILIARY MD FILE IN SIDE PANEL
+		if (file)
+			this.app.workspace.getRightLeaf(false).openFile(file);
+
 	}
 
 	registerContextMenu() {
@@ -253,17 +223,11 @@ export default class CustomerTracking extends Plugin {
 				INITIATIVEUPDATES_VIEW_TYPE,
 				(leaf) => new InitiativeUpdatesView(leaf, this.app, this.tracker, this.settings)
 			);
-
-			this.registerView(
-				RECENTUPDATES_VIEW_TYPE,
-				(leaf) => new RecentUpdatesView(leaf, this.app, this.tracker, this.settings)
-			);
 		})
 	}
 
 	onunload() {
 		this.app.workspace.detachLeavesOfType(INITIATIVEUPDATES_VIEW_TYPE);
-		this.app.workspace.detachLeavesOfType(STATISTICS_VIEW_TYPE);
 	}
 
 	async loadSettings() {
