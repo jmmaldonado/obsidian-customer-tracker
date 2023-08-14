@@ -64,6 +64,18 @@ export function normalizeFilename(fileName: string): string {
     }
 }
 
+export function normalizeText(text: string): string {
+    const illegalSymbols = ['[',']','|', '#'];
+    if (illegalSymbols.some((el) => text.contains(el))) {
+        illegalSymbols.forEach((ilSymbol) => {
+            text = text.replace(ilSymbol, '');
+        });
+        return text;
+    } else {
+        return text;
+    }
+}
+
 export async function checkAndCreateFolder(vault: Vault, folderpath: string) {
     folderpath = normalizePath(folderpath);
     const folder = vault.getAbstractFileByPath(folderpath);
