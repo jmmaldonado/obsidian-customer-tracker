@@ -1,5 +1,6 @@
 import CustomerTracking from "src/main";
 import { UpdatedHeader } from "src/UpdatedHeader";
+import { normalizeText } from "src/Utils";
 
 export async function getRecentlyUpdatedHeadersMD(customerTracking: CustomerTracking): Promise<string> {
     const { vault } = customerTracking.app;
@@ -49,7 +50,7 @@ export async function getRecentlyUpdatedHeadersMD(customerTracking: CustomerTrac
     for (let header of updatedHeaders) {
         let linkText = "{0} {1} ({2})".format(
             header.date.toISOString().split("T")[0],
-            header.text,
+            normalizeText(header.text),
             header.file.basename)
         headersText += header.getLink(linkText) + " \n";
     }
