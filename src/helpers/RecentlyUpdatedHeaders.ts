@@ -3,10 +3,13 @@ import { UpdatedHeader } from "src/UpdatedHeader";
 
 export async function getRecentlyUpdatedHeadersMD(customerTracking: CustomerTracking): Promise<string> {
     const { vault } = customerTracking.app;
-    let dateRegex = new RegExp('.*(\\d{4}-\\d{2}-\\d{2})\\s(.*)'); //Captures ...yyyy-MM-dd...);
+    let dateRegex = new RegExp('.*(\\d{4}-\\d{2}-\\d{2}).*'); //Captures ...yyyy-MM-dd...);
+    let dateAndTextRegex = new RegExp('.*(\\d{4}-\\d{2}-\\d{2})\\s(.*)'); //Captures ...yyyy-MM-dd TEXT...);
     let updateRegex = new RegExp(customerTracking.settings.peopleUpdateRegex);
     const files = vault.getMarkdownFiles()
     let updatedHeaders: UpdatedHeader[] = [];
+
+    //We consider every line starting with # of every file in the vault that contains a date
     for (const file of files) {
         let fileContent = await vault.cachedRead(file);
         let lines = fileContent.split("\n").filter(line => line.startsWith("#"));
@@ -18,10 +21,20 @@ export async function getRecentlyUpdatedHeadersMD(customerTracking: CustomerTrac
                 continue;
 
             let dateLine = line.match(dateRegex);
-            if (dateLine) {
+            let dateTextLine = line.match(dateAndTextRegex);
+
+            if (dateTextLine) {
+                let header = new UpdatedHeader();
+                header.date = new Date(dateTextLine[1]);
+                header.text = dateTextLine[2];
+                header.raw = line;
+                header.file = file;
+                if (!updatedHeaders.contains(header))
+                    updatedHeaders.push(header);
+            } else if (dateLine) {
                 let header = new UpdatedHeader();
                 header.date = new Date(dateLine[1]);
-                header.text = dateLine[2];
+                header.text = file.basename;
                 header.raw = line;
                 header.file = file;
                 if (!updatedHeaders.contains(header))
