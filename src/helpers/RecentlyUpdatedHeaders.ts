@@ -47,12 +47,20 @@ export async function getRecentlyUpdatedHeadersMD(customerTracking: CustomerTrac
     updatedHeaders.sort((a,b) => {return b.date.getTime() - a.date.getTime(); });
 
     let headersText: string = "";
+    let previousDate = "";
+    let headerDate = "";
     for (let header of updatedHeaders) {
+        headerDate = header.date.toISOString().split("T")[0];
         let linkText = "{0} {1} ({2})".format(
-            header.date.toISOString().split("T")[0],
+            headerDate,
             header.text,
             header.file.basename)
+
+        if ( ! (headerDate === previousDate) )
+            headersText += "\n";
+
         headersText += header.getLink(linkText) + " \n";
+        previousDate = headerDate;
     }
     return headersText;
 }
