@@ -53,15 +53,17 @@ export async function getLinesOfHeader(vault: Vault, file: TFile | null, header:
 
 export function normalizeFilename(fileName: string): string {
     const illegalSymbols = [':', '#', '/', '\\', '|', '?', '*', '<', '>', '"'];
-    if (illegalSymbols.some((el) => fileName.contains(el))) {
-        illegalSymbols.forEach((ilSymbol) => {
-            fileName = fileName.replace(ilSymbol, '');
-        });
-
-        return fileName;
-    } else {
-        return fileName;
+    let finished = false;
+    while (!finished) {
+        if (illegalSymbols.some((el) => fileName.contains(el))) {
+            illegalSymbols.forEach((ilSymbol) => {
+                fileName = fileName.replace(ilSymbol, '');
+            });
+        } else {
+            finished = true;
+        }
     }
+    return fileName;
 }
 
 export function normalizeText(text: string): string {
