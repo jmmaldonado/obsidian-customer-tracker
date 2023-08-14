@@ -1,6 +1,6 @@
 import CustomerTracking from "src/main";
 import { UpdatedHeader } from "src/UpdatedHeader";
-import { normalizeText } from "src/Utils";
+import { timeAgo } from "src/Utils";
 
 export async function getRecentlyUpdatedHeadersMD(customerTracking: CustomerTracking): Promise<string> {
     const { vault } = customerTracking.app;
@@ -61,10 +61,14 @@ export async function getRecentlyUpdatedHeadersMD(customerTracking: CustomerTrac
             header.text,
             header.file.basename)
 
-        if ( ! (headerDate === previousDate) )
-            headersText += "\n";
+        if ( ! (headerDate === previousDate) ) {
+            headersText += "\n **{0} ({1})**\n".format(
+                header.date.toLocaleDateString('es-es', { weekday:"long", year:"numeric", month:"short", day:"numeric"}),
+                timeAgo(header.date)
+            )
+        }
 
-        headersText += header.getLink(linkText) + " \n";
+        headersText += "- " + header.getLink(linkText) + " \n";
         previousDate = headerDate;
     }
     return headersText;
