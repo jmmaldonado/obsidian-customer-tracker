@@ -12,6 +12,11 @@ export async function getRecentlyUpdatedHeadersMD(customerTracking: CustomerTrac
 
     //We consider every line starting with # of every file in the vault that contains a date
     for (const file of files) {
+
+        //Dont process files starting with +, move to the next one
+        if (file.basename.startsWith("+"))
+            continue;
+
         let fileContent = await vault.cachedRead(file);
         let lines = fileContent.split("\n").filter(line => line.startsWith("#"));
         for (const line of lines) {
